@@ -329,4 +329,3 @@ private fun formatNumber(value: Double): String =
     } else {
         String.format(Locale.US, "%.2f", value)
     }
-    
