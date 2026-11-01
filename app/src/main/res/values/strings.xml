@@ -21,5 +21,9 @@
     <string name="paper_margin_bottom">Bottom</string>
     <string name="paper_printable_area">Printable area: %1$s × %2$s %3$s</string>
     <string name="paper_full_size">Full size: %1$s × %2$s %3$s</string>
+    <string name="paper_save">Save</string>
+    <string name="paper_saving">Saving…</string>
+    <string name="paper_save_success">Saved</string>
+    <string name="paper_save_error">Could not save</string>
 </resources>
 

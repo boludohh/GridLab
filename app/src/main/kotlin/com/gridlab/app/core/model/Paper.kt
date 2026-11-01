@@ -1,11 +1,14 @@
 package com.gridlab.app.core.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Physical paper definition.
  *
  * All linear values are stored in millimeters (internal unit).
  * [displayUnit] only affects how values are shown or edited in the UI.
  */
+@Serializable
 data class Paper(
     val format: StandardPaperFormat,
     val widthMm: Double,
@@ -58,4 +61,3 @@ data class Paper(
         fun defaultA4(): Paper = fromStandard(StandardPaperFormat.A4)
     }
 }
-

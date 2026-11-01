@@ -1,6 +1,7 @@
 package com.gridlab.app.feature.editor.paper
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,12 +12,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,6 +41,17 @@ fun PaperConfigScreen(
     viewModel: PaperConfigViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     val paper = uiState.paper
 
     Column(
@@ -83,6 +98,34 @@ fun PaperConfigScreen(
         )
 
         PrintableAreaSummary(paper = paper)
+
+        Button(
+            onClick = viewModel::saveDocument,
+            enabled = !uiState.isSaving,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = if (uiState.isSaving) {
+                    stringResource(R.string.paper_saving)
+                } else {
+                    stringResource(R.string.paper_save)
+                },
+            )
+        }
+
+        when (uiState.lastSaveSucceeded) {
+            true -> Text(
+                text = stringResource(R.string.paper_save_success),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            false -> Text(
+                text = stringResource(R.string.paper_save_error),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            null -> Unit
+        }
     }
 }
 
@@ -284,4 +327,3 @@ private fun formatNumber(value: Double): String =
     } else {
         String.format(Locale.US, "%.2f", value)
     }
-

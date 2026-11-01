@@ -25,4 +25,3 @@ object UnitConverter {
             LengthUnit.Inch -> valueMm / MM_PER_INCH
         }
 }
-

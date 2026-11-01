@@ -1,9 +1,12 @@
 package com.gridlab.app.core.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * ISO 216 standard sizes plus Custom.
  * Dimensions below are portrait width × height in millimeters.
  */
+@Serializable
 enum class StandardPaperFormat(
     val portraitWidthMm: Double?,
     val portraitHeightMm: Double?,
@@ -16,4 +19,3 @@ enum class StandardPaperFormat(
     A5(148.0, 210.0),
     Custom(null, null),
 }
-

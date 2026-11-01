@@ -3,7 +3,7 @@ package com.gridlab.app.core.model
 /**
  * Root document model.
  *
- * [schemaVersion] is reserved for future JSON persistence upgrades (Room).
+ * [schemaVersion] is stored with the persisted payload for future upgrades.
  * Grid and reference image are added in later versions.
  */
 data class Document(
@@ -23,4 +23,3 @@ data class Document(
             )
     }
 }
-
