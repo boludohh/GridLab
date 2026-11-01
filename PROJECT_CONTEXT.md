@@ -1,25 +1,15 @@
 # GridLab — Project Context
 
-## What is GridLab
+## Current version: 0.7.0
 
-Android app for grid-drawing technique. Paper, grid, and reference image are independent.
-
-Device: Samsung Galaxy A15. Workflow: MT Manager + Termux + GitHub Actions.
-
-## Architecture
-
-- Single module, MVVM + UDF, Hilt, Konsist, Detekt
-- `core/model`, `core/geometry`, `core/data` (Room)
-- `feature/editor/paper`, `feature/editor/grid`
-
-## Current version: 0.6.0
-
-- Main grid: `Grid` + `GridLineStyle`, `GridCalculator` (pure Kotlin + tests)
-- Canvas preview of paper + grid lines
-- Config UI: rows, columns, visibility, stroke (mm), opacity, color
-- Persistence: `gridJson` column (Room DB v2, migration 1→2)
-- Document.schemaVersion = 2
+- Coil 3.6.3 for reference image display (downsampling)
+- Import from system photo picker (no storage permission)
+- Private copy under `filesDir/projects/<documentId>/`
+- Image drawn fitted in printable area; grid drawn on top
+- Room DB v3 + migration 2→3 (`referenceImageJson`)
+- Document.schemaVersion = 3
 
 ## Next
 
-0.7.0 — Import and show reference image (Coil).
+0.8.0 — Image transform (move/scale, opacity, lock/hide).
+

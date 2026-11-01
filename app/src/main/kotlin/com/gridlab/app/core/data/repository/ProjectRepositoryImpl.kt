@@ -5,6 +5,7 @@ import com.gridlab.app.core.data.database.ProjectDao
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
+import com.gridlab.app.core.model.ReferenceImage
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -37,11 +38,17 @@ class ProjectRepositoryImpl @Inject constructor(
         } else {
             json.decodeFromString<Grid>(gridJson)
         }
+        val referenceImage = if (referenceImageJson.isBlank()) {
+            null
+        } else {
+            json.decodeFromString<ReferenceImage>(referenceImageJson)
+        }
         return Document(
             id = id,
             name = name,
             paper = paper,
             grid = grid,
+            referenceImage = referenceImage,
             schemaVersion = schemaVersion,
         )
     }
@@ -52,6 +59,7 @@ class ProjectRepositoryImpl @Inject constructor(
             name = name,
             paperJson = json.encodeToString(paper),
             gridJson = json.encodeToString(grid),
+            referenceImageJson = referenceImage?.let { json.encodeToString(it) }.orEmpty(),
             schemaVersion = schemaVersion,
             updatedAtEpochMs = System.currentTimeMillis(),
         )

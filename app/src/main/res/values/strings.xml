@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GridLab</string>
-
     <string name="paper_config_title">Paper</string>
     <string name="paper_format_label">Format</string>
     <string name="paper_orientation_label">Orientation</string>
@@ -25,7 +24,6 @@
     <string name="paper_saving">Saving…</string>
     <string name="paper_save_success">Saved</string>
     <string name="paper_save_error">Could not save</string>
-
     <string name="grid_config_title">Grid</string>
     <string name="grid_rows_label">Rows</string>
     <string name="grid_columns_label">Columns</string>
@@ -40,4 +38,10 @@
     <string name="grid_color_black">Black</string>
     <string name="grid_color_gray">Gray</string>
     <string name="grid_color_blue">Blue</string>
+    <string name="image_section_title">Reference image</string>
+    <string name="image_import">Import image</string>
+    <string name="image_replace">Replace image</string>
+    <string name="image_importing">Importing…</string>
+    <string name="image_import_error">Could not import image</string>
+    <string name="image_content_description">Reference image</string>
 </resources>

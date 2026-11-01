@@ -10,10 +10,11 @@ data class Document(
     val name: String,
     val paper: Paper,
     val grid: Grid = Grid.default(),
+    val referenceImage: ReferenceImage? = null,
     val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 2
+        const val CURRENT_SCHEMA_VERSION: Int = 3
 
         fun newDefault(id: String, name: String): Document =
             Document(

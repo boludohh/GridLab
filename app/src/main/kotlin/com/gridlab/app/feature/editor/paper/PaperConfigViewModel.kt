@@ -9,6 +9,7 @@ import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.PaperOrientation
+import com.gridlab.app.core.model.ReferenceImage
 import com.gridlab.app.core.model.StandardPaperFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,7 @@ data class PaperConfigUiState(
     val documentName: String = "Untitled",
     val paper: Paper = Paper.defaultA4(),
     val grid: Grid = Grid.default(),
+    val referenceImage: ReferenceImage? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
@@ -51,6 +53,7 @@ class PaperConfigViewModel @Inject constructor(
                         documentName = existing.name,
                         paper = existing.paper,
                         grid = existing.grid,
+                        referenceImage = existing.referenceImage,
                         isLoading = false,
                         lastSaveSucceeded = null,
                     )
@@ -67,6 +70,7 @@ class PaperConfigViewModel @Inject constructor(
                         documentName = created.name,
                         paper = created.paper,
                         grid = created.grid,
+                        referenceImage = created.referenceImage,
                         isLoading = false,
                         lastSaveSucceeded = null,
                     )
@@ -87,6 +91,7 @@ class PaperConfigViewModel @Inject constructor(
                         name = state.documentName,
                         paper = state.paper,
                         grid = state.grid,
+                        referenceImage = state.referenceImage,
                     ),
                 )
             }.onSuccess {

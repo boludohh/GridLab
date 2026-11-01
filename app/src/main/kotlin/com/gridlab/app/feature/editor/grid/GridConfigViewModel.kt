@@ -1,11 +1,14 @@
 package com.gridlab.app.feature.editor.grid
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
+import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
+import com.gridlab.app.core.model.ReferenceImage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,14 +23,20 @@ data class GridConfigUiState(
     val documentName: String = "Untitled",
     val paper: Paper = Paper.defaultA4(),
     val grid: Grid = Grid.default(),
+    val referenceImage: ReferenceImage? = null,
+    /** Absolute path for Coil; null if no image or file missing. */
+    val imageAbsolutePath: String? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val isImporting: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
+    val importError: Boolean = false,
 )
 
 @HiltViewModel
 class GridConfigViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
+    private val imageStorage: ImageStorage,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GridConfigUiState())
@@ -41,32 +50,59 @@ class GridConfigViewModel @Inject constructor(
         viewModelScope.launch {
             val existing = projectRepository.getLatestDocument()
             if (existing != null) {
-                _uiState.update {
-                    it.copy(
-                        documentId = existing.id,
-                        documentName = existing.name,
-                        paper = existing.paper,
-                        grid = existing.grid,
-                        isLoading = false,
-                        lastSaveSucceeded = null,
-                    )
-                }
+                applyDocument(existing)
             } else {
                 val created = Document.newDefault(
                     id = UUID.randomUUID().toString(),
                     name = "Untitled",
                 )
                 projectRepository.saveDocument(created)
-                _uiState.update {
-                    it.copy(
-                        documentId = created.id,
-                        documentName = created.name,
-                        paper = created.paper,
-                        grid = created.grid,
-                        isLoading = false,
-                        lastSaveSucceeded = null,
-                    )
-                }
+                applyDocument(created)
+            }
+        }
+    }
+
+    private fun applyDocument(document: Document) {
+        val absPath = document.referenceImage?.relativePath?.let { relative ->
+            val file = imageStorage.resolveAbsoluteFile(relative)
+            if (file.isFile) file.absolutePath else null
+        }
+        _uiState.update {
+            it.copy(
+                documentId = document.id,
+                documentName = document.name,
+                paper = document.paper,
+                grid = document.grid,
+                referenceImage = document.referenceImage,
+                imageAbsolutePath = absPath,
+                isLoading = false,
+                lastSaveSucceeded = null,
+                importError = false,
+            )
+        }
+    }
+
+    fun importImage(uri: Uri) {
+        val state = _uiState.value
+        if (state.documentId.isEmpty() || state.isImporting) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, importError = false) }
+            runCatching {
+                val relative = imageStorage.copyFromUri(state.documentId, uri)
+                val ref = ReferenceImage(relativePath = relative)
+                val updated = Document(
+                    id = state.documentId,
+                    name = state.documentName,
+                    paper = state.paper,
+                    grid = state.grid,
+                    referenceImage = ref,
+                )
+                projectRepository.saveDocument(updated)
+                applyDocument(updated)
+            }.onSuccess {
+                _uiState.update { it.copy(isImporting = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isImporting = false, importError = true) }
             }
         }
     }
@@ -83,6 +119,7 @@ class GridConfigViewModel @Inject constructor(
                         name = state.documentName,
                         paper = state.paper,
                         grid = state.grid,
+                        referenceImage = state.referenceImage,
                     ),
                 )
             }.onSuccess {
@@ -94,13 +131,11 @@ class GridConfigViewModel @Inject constructor(
     }
 
     fun setRows(rows: Int) {
-        val value = rows.coerceIn(1, MAX_DIVISIONS)
-        updateGrid { copy(rows = value) }
+        updateGrid { copy(rows = rows.coerceIn(1, MAX_DIVISIONS)) }
     }
 
     fun setColumns(columns: Int) {
-        val value = columns.coerceIn(1, MAX_DIVISIONS)
-        updateGrid { copy(columns = value) }
+        updateGrid { copy(columns = columns.coerceIn(1, MAX_DIVISIONS)) }
     }
 
     fun setVisible(visible: Boolean) {
@@ -108,13 +143,11 @@ class GridConfigViewModel @Inject constructor(
     }
 
     fun setStrokeWidthMm(widthMm: Double) {
-        val w = widthMm.coerceIn(0.05, 5.0)
-        updateGrid { copy(lineStyle = lineStyle.copy(strokeWidthMm = w)) }
+        updateGrid { copy(lineStyle = lineStyle.copy(strokeWidthMm = widthMm.coerceIn(0.05, 5.0))) }
     }
 
     fun setOpacity(opacity: Float) {
-        val o = opacity.coerceIn(0.05f, 1.0f)
-        updateGrid { copy(lineStyle = lineStyle.copy(opacity = o)) }
+        updateGrid { copy(lineStyle = lineStyle.copy(opacity = opacity.coerceIn(0.05f, 1.0f))) }
     }
 
     fun setColorArgb(colorArgb: Long) {

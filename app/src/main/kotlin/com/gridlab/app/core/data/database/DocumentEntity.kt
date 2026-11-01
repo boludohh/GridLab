@@ -9,9 +9,10 @@ data class DocumentEntity(
     val name: String,
     /** JSON payload of [com.gridlab.app.core.model.Paper]. */
     val paperJson: String,
-    /** JSON payload of [com.gridlab.app.core.model.Grid]. Empty object for legacy rows. */
+    /** JSON payload of [com.gridlab.app.core.model.Grid]. */
     val gridJson: String = "{}",
-    /** Explicit schema version stored alongside the row for future migrations. */
+    /** JSON payload of [com.gridlab.app.core.model.ReferenceImage], or empty if none. */
+    val referenceImageJson: String = "",
     val schemaVersion: Int,
     val updatedAtEpochMs: Long,
 )
