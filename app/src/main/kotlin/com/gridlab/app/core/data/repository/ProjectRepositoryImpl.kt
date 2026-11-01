@@ -4,10 +4,10 @@ import com.gridlab.app.core.data.database.DocumentEntity
 import com.gridlab.app.core.data.database.ProjectDao
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Paper
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class ProjectRepositoryImpl @Inject constructor(
