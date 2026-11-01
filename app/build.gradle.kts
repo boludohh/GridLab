@@ -15,8 +15,8 @@ android {
         applicationId = "com.gridlab.app"
         minSdk = 27
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -63,10 +63,11 @@ dependencies {
     // Quality
     detektPlugins(libs.detekt.formatting)
 
-    // Unit tests (Konsist architecture rules)
+    // Unit tests (Konsist architecture rules + geometry/model)
     testImplementation(libs.junit)
     testImplementation(libs.konsist)
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+

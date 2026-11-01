@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GridLab</string>
+
+    <string name="paper_config_title">Paper</string>
+    <string name="paper_format_label">Format</string>
+    <string name="paper_orientation_label">Orientation</string>
+    <string name="paper_orientation_portrait">Portrait</string>
+    <string name="paper_orientation_landscape">Landscape</string>
+    <string name="paper_unit_label">Units</string>
+    <string name="unit_mm">mm</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_in">in</string>
+    <string name="paper_custom_size_label">Custom size</string>
+    <string name="paper_width_label">Width</string>
+    <string name="paper_height_label">Height</string>
+    <string name="paper_margins_label">Margins</string>
+    <string name="paper_margin_left">Left</string>
+    <string name="paper_margin_top">Top</string>
+    <string name="paper_margin_right">Right</string>
+    <string name="paper_margin_bottom">Bottom</string>
+    <string name="paper_printable_area">Printable area: %1$s × %2$s %3$s</string>
+    <string name="paper_full_size">Full size: %1$s × %2$s %3$s</string>
 </resources>
+
