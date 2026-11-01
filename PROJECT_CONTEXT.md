@@ -23,8 +23,9 @@ Target test device: Samsung Galaxy A15 4G (4 GB RAM). Development workflow has n
 - Package layout:
   - `core/` — designsystem, common, model, geometry, render, data (Room + repositories + Hilt modules), navigation
   - `feature/` — home, editor (canvas, grid, image, paper), proyectos, configuracion
-- Borders between `core/` and `feature/` (and between features) are enforced later with Konsist
-- Dependency injection: **Hilt** (active from 0.2.0)
+- Borders between `core/` and `feature/` (and between features) are enforced with **Konsist**
+- Dependency injection: **Hilt**
+- Code quality: **Detekt** (+ formatting plugin)
 - Persistence: Room with JSON serialization of Paper/Grid/ReferenceImage + explicit `schemaVersion`
 - Images: private copy per project under `filesDir/projects/<id>/`, original resolution kept, non-destructive crop relative to original, missing/corrupt image handling
 
@@ -33,8 +34,8 @@ Target test device: Samsung Galaxy A15 4G (4 GB RAM). Development workflow has n
 ## Current public version plan (high level)
 
 - **0.1.0**: project skeleton, Material 3 theme with semantic colors (Light / Dark / Night), IBM Plex Sans, compile-only CI, base docs
-- **0.2.0** (current): Hilt + KSP end-to-end (`GridLabApp`, `@AndroidEntryPoint`, trivial injected ViewModel visible on screen)
-- **0.3.0**: Konsist + Detekt + full CI job
+- **0.2.0**: Hilt + KSP end-to-end (`GridLabApp`, `@AndroidEntryPoint`, trivial injected ViewModel visible on screen)
+- **0.3.0** (current): Konsist architecture tests + Detekt + second CI job (tests + lint)
 - **0.4.0–0.5.0**: Document + Paper model and Room persistence
 - **0.6.0**: Main grid
 - **0.7.0–0.10.0**: Reference image (import, transform, measurement, non-destructive crop)
@@ -58,6 +59,8 @@ Semantic Versioning follows the actual diff against the last release (not file c
 | KSP | 2.3.12 |
 | Hilt | 2.60.1 |
 | hilt-navigation-compose | 1.4.0 |
+| Konsist | 0.18.1 |
+| Detekt | 1.23.8 |
 | Compose BOM | 2026.09.00 |
 | compileSdk | 37 |
 | targetSdk | 37 |
@@ -94,6 +97,6 @@ Typography uses the bundled IBM Plex Sans family.
 
 ---
 
-## Next step after 0.2.0
+## Next step after 0.3.0
 
-0.3.0 — Konsist (architecture boundaries) + Detekt + second CI job (tests + lint) with Gradle cache verification.
+0.4.0 — Document + Paper model (`core/model`, `UnitConverter` in `core/geometry`), paper configuration UI, unit tests for conversion. No persistence yet.

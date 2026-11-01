@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         applicationId = "com.gridlab.app"
         minSdk = 27
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -35,6 +36,13 @@ android {
     }
 }
 
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(files("${rootProject.projectDir}/config/detekt/detekt.yml"))
+    parallel = true
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -51,6 +59,13 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+
+    // Quality
+    detektPlugins(libs.detekt.formatting)
+
+    // Unit tests (Konsist architecture rules)
+    testImplementation(libs.junit)
+    testImplementation(libs.konsist)
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
