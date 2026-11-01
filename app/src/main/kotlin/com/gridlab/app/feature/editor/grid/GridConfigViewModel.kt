@@ -5,16 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
-import com.gridlab.app.core.model.GridLineStyle
 import com.gridlab.app.core.model.Paper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
+import javax.inject.Inject
 
 data class GridConfigUiState(
     val documentId: String = "",
