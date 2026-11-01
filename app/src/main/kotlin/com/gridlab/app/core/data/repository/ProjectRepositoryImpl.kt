@@ -3,6 +3,7 @@ package com.gridlab.app.core.data.repository
 import com.gridlab.app.core.data.database.DocumentEntity
 import com.gridlab.app.core.data.database.ProjectDao
 import com.gridlab.app.core.model.Document
+import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -31,10 +32,16 @@ class ProjectRepositoryImpl @Inject constructor(
 
     private fun DocumentEntity.toDomain(): Document {
         val paper = json.decodeFromString<Paper>(paperJson)
+        val grid = if (gridJson.isBlank() || gridJson == "{}") {
+            Grid.default()
+        } else {
+            json.decodeFromString<Grid>(gridJson)
+        }
         return Document(
             id = id,
             name = name,
             paper = paper,
+            grid = grid,
             schemaVersion = schemaVersion,
         )
     }
@@ -44,6 +51,7 @@ class ProjectRepositoryImpl @Inject constructor(
             id = id,
             name = name,
             paperJson = json.encodeToString(paper),
+            gridJson = json.encodeToString(grid),
             schemaVersion = schemaVersion,
             updatedAtEpochMs = System.currentTimeMillis(),
         )

@@ -5,23 +5,25 @@ import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.Document
+import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.StandardPaperFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
-import javax.inject.Inject
 
 data class PaperConfigUiState(
     val documentId: String = "",
     val documentName: String = "Untitled",
     val paper: Paper = Paper.defaultA4(),
+    val grid: Grid = Grid.default(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
@@ -48,19 +50,23 @@ class PaperConfigViewModel @Inject constructor(
                         documentId = existing.id,
                         documentName = existing.name,
                         paper = existing.paper,
+                        grid = existing.grid,
                         isLoading = false,
                         lastSaveSucceeded = null,
                     )
                 }
             } else {
-                val id = UUID.randomUUID().toString()
-                val created = Document.newWithDefaultPaper(id = id, name = "Untitled")
+                val created = Document.newDefault(
+                    id = UUID.randomUUID().toString(),
+                    name = "Untitled",
+                )
                 projectRepository.saveDocument(created)
                 _uiState.update {
                     it.copy(
                         documentId = created.id,
                         documentName = created.name,
                         paper = created.paper,
+                        grid = created.grid,
                         isLoading = false,
                         lastSaveSucceeded = null,
                     )
@@ -80,6 +86,7 @@ class PaperConfigViewModel @Inject constructor(
                         id = state.documentId,
                         name = state.documentName,
                         paper = state.paper,
+                        grid = state.grid,
                     ),
                 )
             }.onSuccess {

@@ -25,5 +25,19 @@
     <string name="paper_saving">Saving…</string>
     <string name="paper_save_success">Saved</string>
     <string name="paper_save_error">Could not save</string>
-</resources>
 
+    <string name="grid_config_title">Grid</string>
+    <string name="grid_rows_label">Rows</string>
+    <string name="grid_columns_label">Columns</string>
+    <string name="grid_visibility_label">Visibility</string>
+    <string name="grid_visible_on">Show</string>
+    <string name="grid_visible_off">Hide</string>
+    <string name="grid_stroke_label">Line thickness (mm)</string>
+    <string name="grid_stroke_value">%1$s mm</string>
+    <string name="grid_opacity_label">Opacity</string>
+    <string name="grid_opacity_value">%1$d%%</string>
+    <string name="grid_color_label">Line color</string>
+    <string name="grid_color_black">Black</string>
+    <string name="grid_color_gray">Gray</string>
+    <string name="grid_color_blue">Blue</string>
+</resources>
