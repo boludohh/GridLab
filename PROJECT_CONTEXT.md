@@ -24,7 +24,7 @@ Target test device: Samsung Galaxy A15 4G (4 GB RAM). Development workflow has n
   - `core/` — designsystem, common, model, geometry, render, data (Room + repositories + Hilt modules), navigation
   - `feature/` — home, editor (canvas, grid, image, paper), proyectos, configuracion
 - Borders between `core/` and `feature/` (and between features) are enforced later with Konsist
-- Dependency injection: Hilt (from 0.2.0)
+- Dependency injection: **Hilt** (active from 0.2.0)
 - Persistence: Room with JSON serialization of Paper/Grid/ReferenceImage + explicit `schemaVersion`
 - Images: private copy per project under `filesDir/projects/<id>/`, original resolution kept, non-destructive crop relative to original, missing/corrupt image handling
 
@@ -32,8 +32,8 @@ Target test device: Samsung Galaxy A15 4G (4 GB RAM). Development workflow has n
 
 ## Current public version plan (high level)
 
-- **0.1.0** (this release): project skeleton, Material 3 theme with semantic colors (Light / Dark / Night), IBM Plex Sans, compile-only CI, base docs
-- **0.2.0**: Hilt + KSP end-to-end
+- **0.1.0**: project skeleton, Material 3 theme with semantic colors (Light / Dark / Night), IBM Plex Sans, compile-only CI, base docs
+- **0.2.0** (current): Hilt + KSP end-to-end (`GridLabApp`, `@AndroidEntryPoint`, trivial injected ViewModel visible on screen)
 - **0.3.0**: Konsist + Detekt + full CI job
 - **0.4.0–0.5.0**: Document + Paper model and Room persistence
 - **0.6.0**: Main grid
@@ -55,11 +55,14 @@ Semantic Versioning follows the actual diff against the last release (not file c
 | Gradle | 9.8.2 (wrapper) |
 | Android Gradle Plugin | 9.4.1 |
 | Kotlin | 2.4.21 |
+| KSP | 2.3.12 |
+| Hilt | 2.60.1 |
+| hilt-navigation-compose | 1.4.0 |
 | Compose BOM | 2026.09.00 |
 | compileSdk | 37 |
 | targetSdk | 37 |
 | minSdk | 27 |
-| JVM target | 17 |
+| JVM target | 21 |
 | License | GPL-3.0 |
 
 `android.builtInKotlin=false` and `ksp.useKSP2=true` are set in `gradle.properties`.
@@ -91,6 +94,6 @@ Typography uses the bundled IBM Plex Sans family.
 
 ---
 
-## Next step after 0.1.0
+## Next step after 0.2.0
 
-0.2.0 — Hilt + KSP end-to-end (GridLabApp, @AndroidEntryPoint, a trivial injected ViewModel visible on screen).
+0.3.0 — Konsist (architecture boundaries) + Detekt + second CI job (tests + lint) with Gradle cache verification.
