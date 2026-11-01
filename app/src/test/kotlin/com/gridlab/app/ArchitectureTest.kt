@@ -32,7 +32,7 @@ class ArchitectureTest {
                         ?.removePrefix("com.gridlab.app.feature.")
                         ?.substringBefore('.')
                     importedFeature.isNotEmpty() &&
-                        currentFeature.isNotEmpty() &&
+                        currentFeature?.isNotEmpty() == true &&
                         importedFeature != currentFeature &&
                         import.name.startsWith("com.gridlab.app.feature.")
                 }
