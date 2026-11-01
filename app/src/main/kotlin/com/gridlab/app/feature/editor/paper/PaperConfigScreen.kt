@@ -54,16 +54,7 @@ fun PaperConfigScreen(
 
     PaperConfigContent(
         uiState = uiState,
-        onFormatSelect = viewModel::setFormat,
-        onOrientationSelect = viewModel::setOrientation,
-        onUnitSelect = viewModel::setDisplayUnit,
-        onCustomWidth = viewModel::setCustomWidth,
-        onCustomHeight = viewModel::setCustomHeight,
-        onMarginLeft = viewModel::setMarginLeft,
-        onMarginTop = viewModel::setMarginTop,
-        onMarginRight = viewModel::setMarginRight,
-        onMarginBottom = viewModel::setMarginBottom,
-        onSave = viewModel::saveDocument,
+        viewModel = viewModel,
         modifier = modifier,
     )
 }
@@ -71,16 +62,7 @@ fun PaperConfigScreen(
 @Composable
 private fun PaperConfigContent(
     uiState: PaperConfigUiState,
-    onFormatSelect: (StandardPaperFormat) -> Unit,
-    onOrientationSelect: (PaperOrientation) -> Unit,
-    onUnitSelect: (LengthUnit) -> Unit,
-    onCustomWidth: (Double) -> Unit,
-    onCustomHeight: (Double) -> Unit,
-    onMarginLeft: (Double) -> Unit,
-    onMarginTop: (Double) -> Unit,
-    onMarginRight: (Double) -> Unit,
-    onMarginBottom: (Double) -> Unit,
-    onSave: () -> Unit,
+    viewModel: PaperConfigViewModel,
     modifier: Modifier = Modifier,
 ) {
     val paper = uiState.paper
@@ -97,30 +79,30 @@ private fun PaperConfigContent(
             style = MaterialTheme.typography.headlineSmall,
         )
 
-        FormatSection(selected = paper.format, onSelect = onFormatSelect)
-        OrientationSection(selected = paper.orientation, onSelect = onOrientationSelect)
-        UnitSection(selected = paper.displayUnit, onSelect = onUnitSelect)
+        FormatSection(selected = paper.format, onSelect = viewModel::setFormat)
+        OrientationSection(selected = paper.orientation, onSelect = viewModel::setOrientation)
+        UnitSection(selected = paper.displayUnit, onSelect = viewModel::setDisplayUnit)
 
         if (paper.format == StandardPaperFormat.Custom) {
             CustomSizeSection(
                 paper = paper,
-                onWidthChange = onCustomWidth,
-                onHeightChange = onCustomHeight,
+                onWidthChange = viewModel::setCustomWidth,
+                onHeightChange = viewModel::setCustomHeight,
             )
         }
 
         MarginsSection(
             paper = paper,
-            onLeft = onMarginLeft,
-            onTop = onMarginTop,
-            onRight = onMarginRight,
-            onBottom = onMarginBottom,
+            onLeft = viewModel::setMarginLeft,
+            onTop = viewModel::setMarginTop,
+            onRight = viewModel::setMarginRight,
+            onBottom = viewModel::setMarginBottom,
         )
 
         PrintableAreaSummary(paper = paper)
 
         Button(
-            onClick = onSave,
+            onClick = viewModel::saveDocument,
             enabled = !uiState.isSaving,
             modifier = Modifier.fillMaxWidth(),
         ) {
