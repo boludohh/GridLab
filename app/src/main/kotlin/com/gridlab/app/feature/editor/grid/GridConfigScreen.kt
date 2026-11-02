@@ -38,9 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -190,6 +191,15 @@ private fun ImageTransformSection(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    ImageVisibilityLockChips(image = image, viewModel = viewModel)
+    ImageOpacityControls(image = image, viewModel = viewModel)
+}
+
+@Composable
+private fun ImageVisibilityLockChips(
+    image: ReferenceImage,
+    viewModel: GridConfigViewModel,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -221,6 +231,13 @@ private fun ImageTransformSection(
             },
         )
     }
+}
+
+@Composable
+private fun ImageOpacityControls(
+    image: ReferenceImage,
+    viewModel: GridConfigViewModel,
+) {
     Text(
         text = stringResource(R.string.image_opacity_label),
         style = MaterialTheme.typography.bodyMedium,
@@ -276,16 +293,10 @@ private fun DocumentPreview(
         val marginTop = paper.marginTopMm.toFloat() * scale
         val contentW = layout.printableWidthMm.toFloat() * scale
         val contentH = layout.printableHeightMm.toFloat() * scale
-
-        // mm per screen pixel in the current preview
         val mmPerPx = if (scale > 0f) 1.0 / scale.toDouble() else 1.0
 
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                color = paperColor,
-                topLeft = Offset(originX, originY),
-                size = Size(paperW, paperH),
-            )
+            drawRect(color = paperColor, topLeft = Offset(originX, originY), size = Size(paperW, paperH))
             drawRect(
                 color = borderColor,
                 topLeft = Offset(originX, originY),
@@ -294,52 +305,21 @@ private fun DocumentPreview(
             )
         }
 
-        val showImage = imagePath != null &&
-            referenceImage != null &&
-            referenceImage.visible
-
+        val showImage = imagePath != null && referenceImage != null && referenceImage.visible
         if (showImage) {
-            val img = referenceImage!!
-            val userScale = img.scale.toFloat()
-            val offsetXPx = (img.offsetXMm * scale).toFloat()
-            val offsetYPx = (img.offsetYMm * scale).toFloat()
-
-            AsyncImage(
-                model = File(imagePath!!),
-                contentDescription = stringResource(R.string.image_content_description),
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .offset(
-                        x = with(density) { (originX + marginLeft + offsetXPx).toDp() },
-                        y = with(density) { (originY + marginTop + offsetYPx).toDp() },
-                    )
-                    .size(
-                        width = with(density) { contentW.toDp() },
-                        height = with(density) { contentH.toDp() },
-                    )
-                    .graphicsLayer {
-                        scaleX = userScale
-                        scaleY = userScale
-                        alpha = img.opacity
-                        // Scale around the center of the fitted box
-                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin.Center
-                    }
-                    .then(
-                        if (!img.locked) {
-                            Modifier.pointerInput(img.locked, scale) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    if (pan != Offset.Zero) {
-                                        onPan(pan.x * mmPerPx, pan.y * mmPerPx)
-                                    }
-                                    if (zoom != 1f) {
-                                        onScale(zoom.toDouble())
-                                    }
-                                }
-                            }
-                        } else {
-                            Modifier
-                        },
-                    ),
+            ReferenceImageLayer(
+                imagePath = imagePath!!,
+                image = referenceImage!!,
+                originX = originX,
+                originY = originY,
+                marginLeft = marginLeft,
+                marginTop = marginTop,
+                contentW = contentW,
+                contentH = contentH,
+                scale = scale,
+                mmPerPx = mmPerPx,
+                onPan = onPan,
+                onScale = onScale,
             )
         }
 
@@ -349,6 +329,64 @@ private fun DocumentPreview(
             }
         }
     }
+}
+
+@Composable
+private fun ReferenceImageLayer(
+    imagePath: String,
+    image: ReferenceImage,
+    originX: Float,
+    originY: Float,
+    marginLeft: Float,
+    marginTop: Float,
+    contentW: Float,
+    contentH: Float,
+    scale: Float,
+    mmPerPx: Double,
+    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    onScale: (factor: Double) -> Unit,
+) {
+    val density = LocalDensity.current
+    val userScale = image.scale.toFloat()
+    val offsetXPx = (image.offsetXMm * scale).toFloat()
+    val offsetYPx = (image.offsetYMm * scale).toFloat()
+
+    AsyncImage(
+        model = File(imagePath),
+        contentDescription = stringResource(R.string.image_content_description),
+        contentScale = ContentScale.Fit,
+        modifier = Modifier
+            .offset(
+                x = with(density) { (originX + marginLeft + offsetXPx).toDp() },
+                y = with(density) { (originY + marginTop + offsetYPx).toDp() },
+            )
+            .size(
+                width = with(density) { contentW.toDp() },
+                height = with(density) { contentH.toDp() },
+            )
+            .graphicsLayer {
+                scaleX = userScale
+                scaleY = userScale
+                alpha = image.opacity
+                transformOrigin = TransformOrigin.Center
+            }
+            .then(
+                if (!image.locked) {
+                    Modifier.pointerInput(image.locked, scale) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            if (pan != Offset.Zero) {
+                                onPan(pan.x * mmPerPx, pan.y * mmPerPx)
+                            }
+                            if (zoom != 1f) {
+                                onScale(zoom.toDouble())
+                            }
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+    )
 }
 
 private fun DrawScope.drawGridLines(
