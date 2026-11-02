@@ -3,13 +3,13 @@ package com.gridlab.app.core.data.storage
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /**
  * Copies reference images into a private per-document directory under filesDir.
@@ -29,7 +29,7 @@ class ImageStorage @Inject constructor(
         context.contentResolver.openInputStream(uri)?.use { input ->
             dest.outputStream().use { output -> input.copyTo(output) }
         } ?: throw IOException("Cannot open image uri: $uri")
-        "projects/$documentId/${dest.name}"
+        "projects/\( documentId/ \){dest.name}"
     }
 
     fun resolveAbsoluteFile(relativePath: String): File =
