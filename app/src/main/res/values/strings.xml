@@ -53,4 +53,10 @@
     <string name="image_opacity_label">Image opacity</string>
     <string name="image_opacity_value">%1$d%%</string>
     <string name="image_reset_transform">Reset position and scale</string>
+    <string name="measure_section_title">Distance measurement</string>
+    <string name="measure_mode_on">Measuring</string>
+    <string name="measure_mode_off">Measure</string>
+    <string name="measure_hint">Tap two points on the paper preview</string>
+    <string name="measure_clear">Clear points</string>
+    <string name="measure_distance_value">Distance: %1$s %2$s</string>
 </resources>

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
 import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.geometry.ImageTransformCalculator
+import com.gridlab.app.core.geometry.UnitConverter
+import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
@@ -32,6 +34,12 @@ data class GridConfigUiState(
     val isImporting: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
     val importError: Boolean = false,
+    /** When true, taps on the preview place measure points instead of transforming the image. */
+    val measureMode: Boolean = false,
+    /** First measure point in document mm (paper top-left origin), or null. */
+    val measurePoint1Mm: Pair<Double, Double>? = null,
+    /** Second measure point in document mm, or null. */
+    val measurePoint2Mm: Pair<Double, Double>? = null,
 )
 
 @HiltViewModel
@@ -179,6 +187,47 @@ class GridConfigViewModel @Inject constructor(
 
     fun resetImageTransform() {
         updateImage { ImageTransformCalculator.resetTransform(this) }
+    }
+
+    // --- Distance measurement (0.9.0) ---
+
+    fun setMeasureMode(enabled: Boolean) {
+        _uiState.update {
+            it.copy(
+                measureMode = enabled,
+                measurePoint1Mm = if (enabled) it.measurePoint1Mm else null,
+                measurePoint2Mm = if (enabled) it.measurePoint2Mm else null,
+            )
+        }
+    }
+
+    /**
+     * Places the next measure point from a screen tap, converted via [viewport].
+     * First tap → point1, second → point2, third → restarts at point1.
+     */
+    fun placeMeasurePoint(xPx: Float, yPx: Float, viewport: ViewportTransform) {
+        if (!_uiState.value.measureMode) return
+        val docPoint = viewport.screenToDocumentMm(xPx, yPx)
+        _uiState.update { state ->
+            when {
+                state.measurePoint1Mm == null -> state.copy(measurePoint1Mm = docPoint)
+                state.measurePoint2Mm == null -> state.copy(measurePoint2Mm = docPoint)
+                else -> state.copy(measurePoint1Mm = docPoint, measurePoint2Mm = null)
+            }
+        }
+    }
+
+    fun clearMeasurePoints() {
+        _uiState.update { it.copy(measurePoint1Mm = null, measurePoint2Mm = null) }
+    }
+
+    /** Distance in the paper's display unit, or null if both points are not set. */
+    fun measureDistanceDisplay(): Double? {
+        val state = _uiState.value
+        val p1 = state.measurePoint1Mm ?: return null
+        val p2 = state.measurePoint2Mm ?: return null
+        val mm = ViewportTransform.distanceMm(p1, p2)
+        return UnitConverter.fromMm(mm, state.paper.displayUnit)
     }
 
     private fun updateGrid(transform: Grid.() -> Grid) {

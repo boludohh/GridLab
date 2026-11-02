@@ -5,6 +5,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,9 @@ import coil3.compose.AsyncImage
 import com.gridlab.app.R
 import com.gridlab.app.core.geometry.GridCalculator
 import com.gridlab.app.core.geometry.GridLayout
+import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
@@ -129,14 +132,19 @@ private fun GridConfigContent(
             grid = grid,
             imagePath = uiState.imageAbsolutePath,
             referenceImage = uiState.referenceImage,
+            measureMode = uiState.measureMode,
+            measurePoint1Mm = uiState.measurePoint1Mm,
+            measurePoint2Mm = uiState.measurePoint2Mm,
             onPan = { dx, dy -> viewModel.panImage(dx, dy) },
             onScale = { factor -> viewModel.scaleImageBy(factor) },
+            onMeasureTap = { x, y, vt -> viewModel.placeMeasurePoint(x, y, vt) },
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(
                     ratio = (paper.widthMm / paper.heightMm).toFloat().coerceIn(0.3f, 3f),
                 ),
         )
+        MeasureSection(uiState = uiState, viewModel = viewModel)
         ImageImportSection(
             hasImage = uiState.imageAbsolutePath != null,
             isImporting = uiState.isImporting,
@@ -158,6 +166,67 @@ private fun GridConfigContent(
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
+
+@Composable
+private fun MeasureSection(
+    uiState: GridConfigUiState,
+    viewModel: GridConfigViewModel,
+) {
+    Text(
+        text = stringResource(R.string.measure_section_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = uiState.measureMode,
+            onClick = { viewModel.setMeasureMode(!uiState.measureMode) },
+            label = {
+                Text(
+                    text = if (uiState.measureMode) {
+                        stringResource(R.string.measure_mode_on)
+                    } else {
+                        stringResource(R.string.measure_mode_off)
+                    },
+                )
+            },
+        )
+        if (uiState.measureMode) {
+            OutlinedButton(onClick = { viewModel.clearMeasurePoints() }) {
+                Text(text = stringResource(R.string.measure_clear))
+            }
+        }
+    }
+    if (uiState.measureMode) {
+        Text(
+            text = stringResource(R.string.measure_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val distance = viewModel.measureDistanceDisplay()
+        if (distance != null) {
+            val unitLabel = unitLabel(uiState.paper.displayUnit)
+            Text(
+                text = stringResource(
+                    R.string.measure_distance_value,
+                    String.format(Locale.US, "%.2f", distance),
+                    unitLabel,
+                ),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun unitLabel(unit: LengthUnit): String =
+    when (unit) {
+        LengthUnit.Millimeter -> stringResource(R.string.unit_mm)
+        LengthUnit.Centimeter -> stringResource(R.string.unit_cm)
+        LengthUnit.Inch -> stringResource(R.string.unit_in)
+    }
 
 @Composable
 private fun ImageImportSection(
@@ -273,75 +342,174 @@ private fun ImageOpacityControls(
     }
 }
 
+
 @Composable
 private fun DocumentPreview(
     paper: Paper,
     grid: Grid,
     imagePath: String?,
     referenceImage: ReferenceImage?,
+    measureMode: Boolean,
+    measurePoint1Mm: Pair<Double, Double>?,
+    measurePoint2Mm: Pair<Double, Double>?,
     onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
     onScale: (factor: Double) -> Unit,
+    onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val layout = remember(paper, grid) { GridCalculator.calculate(paper, grid) }
     val paperColor = MaterialTheme.colorScheme.surface
     val borderColor = MaterialTheme.colorScheme.outline
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+    val measureColor = MaterialTheme.colorScheme.primary
 
     BoxWithConstraints(
-        modifier = modifier
-            .background(surfaceVariant)
-            .padding(8.dp),
+        modifier = modifier.background(surfaceVariant).padding(8.dp),
     ) {
-        val maxW = constraints.maxWidth.toFloat()
-        val maxH = constraints.maxHeight.toFloat()
-        val scale = minOf(maxW / paper.widthMm.toFloat(), maxH / paper.heightMm.toFloat())
-        val paperW = paper.widthMm.toFloat() * scale
-        val paperH = paper.heightMm.toFloat() * scale
-        val originX = (maxW - paperW) / 2f
-        val originY = (maxH - paperH) / 2f
-        val marginLeft = paper.marginLeftMm.toFloat() * scale
-        val marginTop = paper.marginTopMm.toFloat() * scale
-        val contentW = layout.printableWidthMm.toFloat() * scale
-        val contentH = layout.printableHeightMm.toFloat() * scale
-        val mmPerPx = if (scale > 0f) 1.0 / scale.toDouble() else 1.0
+        val metrics = rememberPreviewMetrics(paper, layout, constraints.maxWidth, constraints.maxHeight)
+        val viewport = ViewportTransform(
+            originXPx = metrics.originX,
+            originYPx = metrics.originY,
+            scale = metrics.scale,
+        )
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(color = paperColor, topLeft = Offset(originX, originY), size = Size(paperW, paperH))
-            drawRect(
-                color = borderColor,
-                topLeft = Offset(originX, originY),
-                size = Size(paperW, paperH),
-                style = Stroke(width = 2f),
-            )
-        }
+        PaperBackgroundCanvas(
+            metrics = metrics,
+            paperColor = paperColor,
+            borderColor = borderColor,
+            measureMode = measureMode,
+            onMeasureTap = onMeasureTap,
+            viewport = viewport,
+        )
 
-        val showImage = imagePath != null && referenceImage != null && referenceImage.visible
-        if (showImage) {
-            ReferenceImageLayer(
-                imagePath = imagePath!!,
-                image = referenceImage!!,
-                layout = ImageLayerLayout(
-                    originX = originX,
-                    originY = originY,
-                    marginLeft = marginLeft,
-                    marginTop = marginTop,
-                    contentW = contentW,
-                    contentH = contentH,
-                    scale = scale,
-                    mmPerPx = mmPerPx,
-                ),
-                onPan = onPan,
-                onScale = onScale,
-            )
-        }
+        PreviewImageLayer(
+            imagePath = imagePath,
+            referenceImage = referenceImage,
+            metrics = metrics,
+            measureMode = measureMode,
+            onPan = onPan,
+            onScale = onScale,
+        )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (grid.visible) {
-                drawGridLines(layout, grid, originX, originY, scale, paper)
+                drawGridLines(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
             }
+            drawMeasureOverlay(viewport, measurePoint1Mm, measurePoint2Mm, measureColor)
         }
     }
+}
+
+private data class PreviewMetrics(
+    val originX: Float,
+    val originY: Float,
+    val marginLeft: Float,
+    val marginTop: Float,
+    val contentW: Float,
+    val contentH: Float,
+    val scale: Float,
+    val mmPerPx: Double,
+    val paperW: Float,
+    val paperH: Float,
+)
+
+@Composable
+private fun rememberPreviewMetrics(
+    paper: Paper,
+    layout: GridLayout,
+    maxWInt: Int,
+    maxHInt: Int,
+): PreviewMetrics {
+    val maxW = maxWInt.toFloat()
+    val maxH = maxHInt.toFloat()
+    val scale = minOf(maxW / paper.widthMm.toFloat(), maxH / paper.heightMm.toFloat())
+    val paperW = paper.widthMm.toFloat() * scale
+    val paperH = paper.heightMm.toFloat() * scale
+    val originX = (maxW - paperW) / 2f
+    val originY = (maxH - paperH) / 2f
+    return PreviewMetrics(
+        originX = originX,
+        originY = originY,
+        marginLeft = paper.marginLeftMm.toFloat() * scale,
+        marginTop = paper.marginTopMm.toFloat() * scale,
+        contentW = layout.printableWidthMm.toFloat() * scale,
+        contentH = layout.printableHeightMm.toFloat() * scale,
+        scale = scale,
+        mmPerPx = if (scale > 0f) 1.0 / scale.toDouble() else 1.0,
+        paperW = paperW,
+        paperH = paperH,
+    )
+}
+
+@Composable
+private fun PaperBackgroundCanvas(
+    metrics: PreviewMetrics,
+    paperColor: Color,
+    borderColor: Color,
+    measureMode: Boolean,
+    onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
+    viewport: ViewportTransform,
+) {
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(
+                if (measureMode) {
+                    Modifier.pointerInput(measureMode) {
+                        detectTapGestures { offset ->
+                            onMeasureTap(offset.x, offset.y, viewport)
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
+        drawRect(
+            color = paperColor,
+            topLeft = Offset(metrics.originX, metrics.originY),
+            size = Size(metrics.paperW, metrics.paperH),
+        )
+        drawRect(
+            color = borderColor,
+            topLeft = Offset(metrics.originX, metrics.originY),
+            size = Size(metrics.paperW, metrics.paperH),
+            style = Stroke(width = 2f),
+        )
+    }
+}
+
+@Composable
+private fun PreviewImageLayer(
+    imagePath: String?,
+    referenceImage: ReferenceImage?,
+    metrics: PreviewMetrics,
+    measureMode: Boolean,
+    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    onScale: (factor: Double) -> Unit,
+) {
+    val show = imagePath != null && referenceImage != null && referenceImage.visible
+    if (!show) return
+    val panHandler: (Double, Double) -> Unit =
+        if (measureMode) { _, _ -> } else onPan
+    val scaleHandler: (Double) -> Unit =
+        if (measureMode) { _ -> } else onScale
+    ReferenceImageLayer(
+        imagePath = imagePath!!,
+        image = referenceImage!!,
+        layout = ImageLayerLayout(
+            originX = metrics.originX,
+            originY = metrics.originY,
+            marginLeft = metrics.marginLeft,
+            marginTop = metrics.marginTop,
+            contentW = metrics.contentW,
+            contentH = metrics.contentH,
+            scale = metrics.scale,
+            mmPerPx = metrics.mmPerPx,
+        ),
+        onPan = panHandler,
+        onScale = scaleHandler,
+    )
 }
 
 @Composable
@@ -356,6 +524,7 @@ private fun ReferenceImageLayer(
     val userScale = image.scale.toFloat()
     val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
+    val gesturesEnabled = !image.locked
 
     AsyncImage(
         model = File(imagePath),
@@ -381,7 +550,7 @@ private fun ReferenceImageLayer(
                 transformOrigin = TransformOrigin.Center
             }
             .then(
-                if (!image.locked) {
+                if (gesturesEnabled) {
                     Modifier.pointerInput(image.locked, layout.scale) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             if (pan != Offset.Zero) {

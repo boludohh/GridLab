@@ -7,7 +7,7 @@
 | Path | Purpose | Status |
 |------|---------|--------|
 | Paper, Grid, Document | Document model | implemented |
-| `ReferenceImage.kt` | Reference image path + transform (offset, scale, opacity, lock, visibility, rotationDegrees prepared) | implemented (0.8.0) |
+| `ReferenceImage.kt` | Reference image path + transform | implemented (0.8.0) |
 
 ## core/geometry
 
@@ -15,6 +15,7 @@
 |------|---------|--------|
 | UnitConverter, GridCalculator | Pure geometry | implemented |
 | `ImageTransformCalculator.kt` | Pan, scale, opacity, lock, visibility helpers | implemented (0.8.0) |
+| `ViewportTransform.kt` | Screen ↔ document mm mapping; distance | implemented (0.9.0) |
 
 ## core/data
 
@@ -29,11 +30,10 @@
 | Path | Purpose | Status |
 |------|---------|--------|
 | paper/* | Paper config | implemented |
-| grid/* | Grid config + image import + transform UI + Canvas/Coil preview with gestures | implemented (0.8.0) |
+| grid/* | Grid config + image + transform + distance measurement | implemented (0.9.0) |
 
 ## Planned
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Distance measurement | 0.9.0 | planned |
 | Non-destructive crop | 0.10.0 | planned |
