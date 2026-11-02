@@ -29,7 +29,7 @@ class ImageStorage @Inject constructor(
         context.contentResolver.openInputStream(uri)?.use { input ->
             dest.outputStream().use { output -> input.copyTo(output) }
         } ?: throw IOException("Cannot open image uri: $uri")
-        "projects/\( documentId/ \){dest.name}"
+        "projects/" + documentId + "/" + dest.name
     }
 
     fun resolveAbsoluteFile(relativePath: String): File =
