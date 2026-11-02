@@ -23,12 +23,12 @@ class ImageStorage @Inject constructor(
      * Copies [uri] into `projects/<documentId>/` and returns the path relative to filesDir.
      */
     suspend fun copyFromUri(documentId: String, uri: Uri): String = withContext(Dispatchers.IO) {
-        val dir = File(context.filesDir, "projects/$documentId").apply { mkdirs() }
+        val dir = File(context.filesDir, "projects/" + documentId).apply { mkdirs() }
         val extension = guessExtension(uri)
-        val dest = File(dir, "original_$extension")
+        val dest = File(dir, "original_" + extension)
         context.contentResolver.openInputStream(uri)?.use { input ->
             dest.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw IOException("Cannot open image uri: $uri")
+        } ?: throw IOException("Cannot open image uri: " + uri)
         "projects/" + documentId + "/" + dest.name
     }
 
@@ -39,12 +39,12 @@ class ImageStorage @Inject constructor(
         resolveAbsoluteFile(relativePath).isFile
 
     private fun guessExtension(uri: Uri): String {
-        val type = context.contentResolver.getType(uri) ?: return "${UUID.randomUUID()}.jpg"
+        val type = context.contentResolver.getType(uri) ?: return UUID.randomUUID().toString() + ".jpg"
         return when (type) {
-            "image/png" -> "${UUID.randomUUID()}.png"
-            "image/webp" -> "${UUID.randomUUID()}.webp"
-            "image/jpeg", "image/jpg" -> "${UUID.randomUUID()}.jpg"
-            else -> "${UUID.randomUUID()}.jpg"
+            "image/png" -> UUID.randomUUID().toString() + ".png"
+            "image/webp" -> UUID.randomUUID().toString() + ".webp"
+            "image/jpeg", "image/jpg" -> UUID.randomUUID().toString() + ".jpg"
+            else -> UUID.randomUUID().toString() + ".jpg"
         }
     }
 }
