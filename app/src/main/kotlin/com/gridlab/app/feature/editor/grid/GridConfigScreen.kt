@@ -60,6 +60,18 @@ import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
 import java.util.Locale
 
+/** Layout metrics for placing the reference image inside the paper preview. */
+private data class ImageLayerLayout(
+    val originX: Float,
+    val originY: Float,
+    val marginLeft: Float,
+    val marginTop: Float,
+    val contentW: Float,
+    val contentH: Float,
+    val scale: Float,
+    val mmPerPx: Double,
+)
+
 @Composable
 fun GridConfigScreen(
     modifier: Modifier = Modifier,
@@ -281,7 +293,6 @@ private fun DocumentPreview(
             .background(surfaceVariant)
             .padding(8.dp),
     ) {
-        val density = LocalDensity.current
         val maxW = constraints.maxWidth.toFloat()
         val maxH = constraints.maxHeight.toFloat()
         val scale = minOf(maxW / paper.widthMm.toFloat(), maxH / paper.heightMm.toFloat())
@@ -310,14 +321,16 @@ private fun DocumentPreview(
             ReferenceImageLayer(
                 imagePath = imagePath!!,
                 image = referenceImage!!,
-                originX = originX,
-                originY = originY,
-                marginLeft = marginLeft,
-                marginTop = marginTop,
-                contentW = contentW,
-                contentH = contentH,
-                scale = scale,
-                mmPerPx = mmPerPx,
+                layout = ImageLayerLayout(
+                    originX = originX,
+                    originY = originY,
+                    marginLeft = marginLeft,
+                    marginTop = marginTop,
+                    contentW = contentW,
+                    contentH = contentH,
+                    scale = scale,
+                    mmPerPx = mmPerPx,
+                ),
                 onPan = onPan,
                 onScale = onScale,
             )
@@ -335,21 +348,14 @@ private fun DocumentPreview(
 private fun ReferenceImageLayer(
     imagePath: String,
     image: ReferenceImage,
-    originX: Float,
-    originY: Float,
-    marginLeft: Float,
-    marginTop: Float,
-    contentW: Float,
-    contentH: Float,
-    scale: Float,
-    mmPerPx: Double,
+    layout: ImageLayerLayout,
     onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
     onScale: (factor: Double) -> Unit,
 ) {
     val density = LocalDensity.current
     val userScale = image.scale.toFloat()
-    val offsetXPx = (image.offsetXMm * scale).toFloat()
-    val offsetYPx = (image.offsetYMm * scale).toFloat()
+    val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
+    val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
 
     AsyncImage(
         model = File(imagePath),
@@ -357,12 +363,16 @@ private fun ReferenceImageLayer(
         contentScale = ContentScale.Fit,
         modifier = Modifier
             .offset(
-                x = with(density) { (originX + marginLeft + offsetXPx).toDp() },
-                y = with(density) { (originY + marginTop + offsetYPx).toDp() },
+                x = with(density) {
+                    (layout.originX + layout.marginLeft + offsetXPx).toDp()
+                },
+                y = with(density) {
+                    (layout.originY + layout.marginTop + offsetYPx).toDp()
+                },
             )
             .size(
-                width = with(density) { contentW.toDp() },
-                height = with(density) { contentH.toDp() },
+                width = with(density) { layout.contentW.toDp() },
+                height = with(density) { layout.contentH.toDp() },
             )
             .graphicsLayer {
                 scaleX = userScale
@@ -372,10 +382,10 @@ private fun ReferenceImageLayer(
             }
             .then(
                 if (!image.locked) {
-                    Modifier.pointerInput(image.locked, scale) {
+                    Modifier.pointerInput(image.locked, layout.scale) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             if (pan != Offset.Zero) {
-                                onPan(pan.x * mmPerPx, pan.y * mmPerPx)
+                                onPan(pan.x * layout.mmPerPx, pan.y * layout.mmPerPx)
                             }
                             if (zoom != 1f) {
                                 onScale(zoom.toDouble())
