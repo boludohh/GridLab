@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
 import com.gridlab.app.core.data.storage.ImageStorage
+import com.gridlab.app.core.geometry.ImageTransformCalculator
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
@@ -89,7 +90,7 @@ class GridConfigViewModel @Inject constructor(
             _uiState.update { it.copy(isImporting = true, importError = false) }
             runCatching {
                 val relative = imageStorage.copyFromUri(state.documentId, uri)
-                val ref = ReferenceImage(relativePath = relative)
+                val ref = ReferenceImage.withPath(relative)
                 val updated = Document(
                     id = state.documentId,
                     name = state.documentName,
@@ -154,9 +155,45 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(lineStyle = lineStyle.copy(colorArgb = colorArgb)) }
     }
 
+    // --- Image transform (0.8.0) ---
+
+    fun panImage(deltaXMm: Double, deltaYMm: Double) {
+        updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
+    }
+
+    fun scaleImageBy(factor: Double) {
+        updateImage { ImageTransformCalculator.scaleBy(this, factor) }
+    }
+
+    fun setImageOpacity(opacity: Float) {
+        updateImage { ImageTransformCalculator.withOpacity(this, opacity) }
+    }
+
+    fun setImageLocked(locked: Boolean) {
+        updateImage { ImageTransformCalculator.withLocked(this, locked) }
+    }
+
+    fun setImageVisible(visible: Boolean) {
+        updateImage { ImageTransformCalculator.withVisible(this, visible) }
+    }
+
+    fun resetImageTransform() {
+        updateImage { ImageTransformCalculator.resetTransform(this) }
+    }
+
     private fun updateGrid(transform: Grid.() -> Grid) {
         _uiState.update { state ->
             state.copy(grid = state.grid.transform(), lastSaveSucceeded = null)
+        }
+    }
+
+    private fun updateImage(transform: ReferenceImage.() -> ReferenceImage) {
+        _uiState.update { state ->
+            val current = state.referenceImage ?: return@update state
+            state.copy(
+                referenceImage = current.transform(),
+                lastSaveSucceeded = null,
+            )
         }
     }
 

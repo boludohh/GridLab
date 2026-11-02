@@ -5,6 +5,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,8 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -52,6 +55,7 @@ import com.gridlab.app.core.geometry.GridCalculator
 import com.gridlab.app.core.geometry.GridLayout
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
+import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
 import java.util.Locale
 
@@ -111,6 +115,9 @@ private fun GridConfigContent(
             paper = paper,
             grid = grid,
             imagePath = uiState.imageAbsolutePath,
+            referenceImage = uiState.referenceImage,
+            onPan = { dx, dy -> viewModel.panImage(dx, dy) },
+            onScale = { factor -> viewModel.scaleImageBy(factor) },
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(
@@ -123,6 +130,12 @@ private fun GridConfigContent(
             importError = uiState.importError,
             onImportClick = onImportClick,
         )
+        if (uiState.referenceImage != null) {
+            ImageTransformSection(
+                image = uiState.referenceImage,
+                viewModel = viewModel,
+            )
+        }
         GridSizeSection(grid = grid, viewModel = viewModel)
         GridVisibilitySection(grid = grid, viewModel = viewModel)
         GridStrokeSection(grid = grid, viewModel = viewModel)
@@ -164,10 +177,81 @@ private fun ImageImportSection(
 }
 
 @Composable
+private fun ImageTransformSection(
+    image: ReferenceImage,
+    viewModel: GridConfigViewModel,
+) {
+    Text(
+        text = stringResource(R.string.image_transform_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Text(
+        text = stringResource(R.string.image_transform_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = image.visible,
+            onClick = { viewModel.setImageVisible(!image.visible) },
+            label = {
+                Text(
+                    text = if (image.visible) {
+                        stringResource(R.string.image_visible_on)
+                    } else {
+                        stringResource(R.string.image_visible_off)
+                    },
+                )
+            },
+        )
+        FilterChip(
+            selected = image.locked,
+            onClick = { viewModel.setImageLocked(!image.locked) },
+            label = {
+                Text(
+                    text = if (image.locked) {
+                        stringResource(R.string.image_locked_on)
+                    } else {
+                        stringResource(R.string.image_locked_off)
+                    },
+                )
+            },
+        )
+    }
+    Text(
+        text = stringResource(R.string.image_opacity_label),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Slider(
+        value = image.opacity,
+        onValueChange = { viewModel.setImageOpacity(it) },
+        valueRange = 0.05f..1f,
+        enabled = !image.locked,
+    )
+    Text(
+        text = stringResource(R.string.image_opacity_value, (image.opacity * 100).toInt()),
+        style = MaterialTheme.typography.bodySmall,
+    )
+    OutlinedButton(
+        onClick = { viewModel.resetImageTransform() },
+        enabled = !image.locked,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = stringResource(R.string.image_reset_transform))
+    }
+}
+
+@Composable
 private fun DocumentPreview(
     paper: Paper,
     grid: Grid,
     imagePath: String?,
+    referenceImage: ReferenceImage?,
+    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    onScale: (factor: Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val layout = remember(paper, grid) { GridCalculator.calculate(paper, grid) }
@@ -193,6 +277,9 @@ private fun DocumentPreview(
         val contentW = layout.printableWidthMm.toFloat() * scale
         val contentH = layout.printableHeightMm.toFloat() * scale
 
+        // mm per screen pixel in the current preview
+        val mmPerPx = if (scale > 0f) 1.0 / scale.toDouble() else 1.0
+
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawRect(
                 color = paperColor,
@@ -207,19 +294,51 @@ private fun DocumentPreview(
             )
         }
 
-        if (imagePath != null) {
+        val showImage = imagePath != null &&
+            referenceImage != null &&
+            referenceImage.visible
+
+        if (showImage) {
+            val img = referenceImage!!
+            val userScale = img.scale.toFloat()
+            val offsetXPx = (img.offsetXMm * scale).toFloat()
+            val offsetYPx = (img.offsetYMm * scale).toFloat()
+
             AsyncImage(
-                model = File(imagePath),
+                model = File(imagePath!!),
                 contentDescription = stringResource(R.string.image_content_description),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .offset(
-                        x = with(density) { (originX + marginLeft).toDp() },
-                        y = with(density) { (originY + marginTop).toDp() },
+                        x = with(density) { (originX + marginLeft + offsetXPx).toDp() },
+                        y = with(density) { (originY + marginTop + offsetYPx).toDp() },
                     )
                     .size(
                         width = with(density) { contentW.toDp() },
                         height = with(density) { contentH.toDp() },
+                    )
+                    .graphicsLayer {
+                        scaleX = userScale
+                        scaleY = userScale
+                        alpha = img.opacity
+                        // Scale around the center of the fitted box
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin.Center
+                    }
+                    .then(
+                        if (!img.locked) {
+                            Modifier.pointerInput(img.locked, scale) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    if (pan != Offset.Zero) {
+                                        onPan(pan.x * mmPerPx, pan.y * mmPerPx)
+                                    }
+                                    if (zoom != 1f) {
+                                        onScale(zoom.toDouble())
+                                    }
+                                }
+                            }
+                        } else {
+                            Modifier
+                        },
                     ),
             )
         }
@@ -297,34 +416,31 @@ private fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
 @Composable
 private fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
     Text(text = stringResource(R.string.grid_stroke_label), style = MaterialTheme.typography.titleMedium)
+    Slider(
+        value = grid.lineStyle.strokeWidthMm.toFloat(),
+        onValueChange = { viewModel.setStrokeWidthMm(it.toDouble()) },
+        valueRange = 0.05f..5f,
+    )
     Text(
         text = stringResource(
             R.string.grid_stroke_value,
             String.format(Locale.US, "%.2f", grid.lineStyle.strokeWidthMm),
         ),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    Slider(
-        value = grid.lineStyle.strokeWidthMm.toFloat(),
-        onValueChange = { viewModel.setStrokeWidthMm(it.toDouble()) },
-        valueRange = 0.05f..2.0f,
+        style = MaterialTheme.typography.bodySmall,
     )
 }
 
 @Composable
 private fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
     Text(text = stringResource(R.string.grid_opacity_label), style = MaterialTheme.typography.titleMedium)
-    Text(
-        text = stringResource(
-            R.string.grid_opacity_value,
-            (grid.lineStyle.opacity * 100).toInt(),
-        ),
-        style = MaterialTheme.typography.bodyMedium,
-    )
     Slider(
         value = grid.lineStyle.opacity,
         onValueChange = viewModel::setOpacity,
-        valueRange = 0.05f..1.0f,
+        valueRange = 0.05f..1f,
+    )
+    Text(
+        text = stringResource(R.string.grid_opacity_value, (grid.lineStyle.opacity * 100).toInt()),
+        style = MaterialTheme.typography.bodySmall,
     )
 }
 
@@ -332,20 +448,20 @@ private fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
 private fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
     Text(text = stringResource(R.string.grid_color_label), style = MaterialTheme.typography.titleMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ColorChip(
-            label = stringResource(R.string.grid_color_black),
+        FilterChip(
             selected = grid.lineStyle.colorArgb == 0xFF000000,
             onClick = { viewModel.setColorArgb(0xFF000000) },
+            label = { Text(stringResource(R.string.grid_color_black)) },
         )
-        ColorChip(
-            label = stringResource(R.string.grid_color_gray),
-            selected = grid.lineStyle.colorArgb == 0xFF888888,
-            onClick = { viewModel.setColorArgb(0xFF888888) },
+        FilterChip(
+            selected = grid.lineStyle.colorArgb == 0xFF808080,
+            onClick = { viewModel.setColorArgb(0xFF808080) },
+            label = { Text(stringResource(R.string.grid_color_gray)) },
         )
-        ColorChip(
-            label = stringResource(R.string.grid_color_blue),
+        FilterChip(
             selected = grid.lineStyle.colorArgb == 0xFF1565C0,
             onClick = { viewModel.setColorArgb(0xFF1565C0) },
+            label = { Text(stringResource(R.string.grid_color_blue)) },
         )
     }
 }
@@ -358,31 +474,14 @@ private fun GridSaveSection(uiState: GridConfigUiState, onSave: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
-            text = if (uiState.isSaving) {
-                stringResource(R.string.paper_saving)
-            } else {
-                stringResource(R.string.paper_save)
+            text = when {
+                uiState.isSaving -> stringResource(R.string.paper_saving)
+                uiState.lastSaveSucceeded == true -> stringResource(R.string.paper_save_success)
+                uiState.lastSaveSucceeded == false -> stringResource(R.string.paper_save_error)
+                else -> stringResource(R.string.paper_save)
             },
         )
     }
-    when (uiState.lastSaveSucceeded) {
-        true -> Text(
-            text = stringResource(R.string.paper_save_success),
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        false -> Text(
-            text = stringResource(R.string.paper_save_error),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        null -> Unit
-    }
-}
-
-@Composable
-private fun ColorChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
 }
 
 @Composable
@@ -394,7 +493,9 @@ private fun IntField(
 ) {
     OutlinedTextField(
         value = value.toString(),
-        onValueChange = { text -> text.toIntOrNull()?.let(onValueChange) },
+        onValueChange = { text ->
+            text.toIntOrNull()?.let(onValueChange)
+        },
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

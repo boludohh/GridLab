@@ -44,4 +44,13 @@
     <string name="image_importing">Importing…</string>
     <string name="image_import_error">Could not import image</string>
     <string name="image_content_description">Reference image</string>
+    <string name="image_transform_title">Image transform</string>
+    <string name="image_transform_hint">Drag to move, pinch to scale (when unlocked)</string>
+    <string name="image_visible_on">Visible</string>
+    <string name="image_visible_off">Hidden</string>
+    <string name="image_locked_on">Locked</string>
+    <string name="image_locked_off">Unlocked</string>
+    <string name="image_opacity_label">Image opacity</string>
+    <string name="image_opacity_value">%1$d%%</string>
+    <string name="image_reset_transform">Reset position and scale</string>
 </resources>
