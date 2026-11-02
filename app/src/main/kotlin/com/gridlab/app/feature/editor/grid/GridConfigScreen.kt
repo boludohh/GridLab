@@ -21,14 +21,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +44,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,6 +69,16 @@ private data class ImageLayerLayout(
     val contentH: Float,
     val scale: Float,
     val mmPerPx: Double,
+)
+
+/** Measure state + interaction callbacks for the paper preview (keeps DocumentPreview ≤ 8 params). */
+private data class PreviewInteraction(
+    val measureMode: Boolean,
+    val measurePoint1Mm: Pair<Double, Double>?,
+    val measurePoint2Mm: Pair<Double, Double>?,
+    val onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    val onScale: (factor: Double) -> Unit,
+    val onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
 )
 
 @Composable
@@ -115,6 +121,14 @@ private fun GridConfigContent(
 ) {
     val grid = uiState.grid
     val paper = uiState.paper
+    val interaction = PreviewInteraction(
+        measureMode = uiState.measureMode,
+        measurePoint1Mm = uiState.measurePoint1Mm,
+        measurePoint2Mm = uiState.measurePoint2Mm,
+        onPan = { dx, dy -> viewModel.panImage(dx, dy) },
+        onScale = { factor -> viewModel.scaleImageBy(factor) },
+        onMeasureTap = { x, y, vt -> viewModel.placeMeasurePoint(x, y, vt) },
+    )
 
     Column(
         modifier = modifier
@@ -132,12 +146,7 @@ private fun GridConfigContent(
             grid = grid,
             imagePath = uiState.imageAbsolutePath,
             referenceImage = uiState.referenceImage,
-            measureMode = uiState.measureMode,
-            measurePoint1Mm = uiState.measurePoint1Mm,
-            measurePoint2Mm = uiState.measurePoint2Mm,
-            onPan = { dx, dy -> viewModel.panImage(dx, dy) },
-            onScale = { factor -> viewModel.scaleImageBy(factor) },
-            onMeasureTap = { x, y, vt -> viewModel.placeMeasurePoint(x, y, vt) },
+            interaction = interaction,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(
@@ -205,7 +214,7 @@ private fun MeasureSection(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        val distance = viewModel.measureDistanceDisplay()
+        val distance = uiState.measureDistanceDisplay()
         if (distance != null) {
             val unitLabel = unitLabel(uiState.paper.displayUnit)
             Text(
@@ -348,12 +357,7 @@ private fun DocumentPreview(
     grid: Grid,
     imagePath: String?,
     referenceImage: ReferenceImage?,
-    measureMode: Boolean,
-    measurePoint1Mm: Pair<Double, Double>?,
-    measurePoint2Mm: Pair<Double, Double>?,
-    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
-    onScale: (factor: Double) -> Unit,
-    onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
+    interaction: PreviewInteraction,
     modifier: Modifier = Modifier,
 ) {
     val layout = remember(paper, grid) { GridCalculator.calculate(paper, grid) }
@@ -376,8 +380,8 @@ private fun DocumentPreview(
             metrics = metrics,
             paperColor = paperColor,
             borderColor = borderColor,
-            measureMode = measureMode,
-            onMeasureTap = onMeasureTap,
+            measureMode = interaction.measureMode,
+            onMeasureTap = interaction.onMeasureTap,
             viewport = viewport,
         )
 
@@ -385,16 +389,21 @@ private fun DocumentPreview(
             imagePath = imagePath,
             referenceImage = referenceImage,
             metrics = metrics,
-            measureMode = measureMode,
-            onPan = onPan,
-            onScale = onScale,
+            measureMode = interaction.measureMode,
+            onPan = interaction.onPan,
+            onScale = interaction.onScale,
         )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (grid.visible) {
                 drawGridLines(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
             }
-            drawMeasureOverlay(viewport, measurePoint1Mm, measurePoint2Mm, measureColor)
+            drawMeasureOverlay(
+                viewport,
+                interaction.measurePoint1Mm,
+                interaction.measurePoint2Mm,
+                measureColor,
+            )
         }
     }
 }
@@ -611,132 +620,4 @@ private fun DrawScope.drawGridLines(
         val y = contentOriginY + (yMm * scale).toFloat()
         drawLine(lineColor, Offset(contentOriginX, y), Offset(contentOriginX + contentW, y), strokePx)
     }
-}
-
-@Composable
-private fun GridSizeSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        IntField(
-            label = stringResource(R.string.grid_rows_label),
-            value = grid.rows,
-            onValueChange = viewModel::setRows,
-            modifier = Modifier.weight(1f),
-        )
-        IntField(
-            label = stringResource(R.string.grid_columns_label),
-            value = grid.columns,
-            onValueChange = viewModel::setColumns,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_visibility_label), style = MaterialTheme.typography.titleMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = grid.visible,
-            onClick = { viewModel.setVisible(true) },
-            label = { Text(stringResource(R.string.grid_visible_on)) },
-        )
-        FilterChip(
-            selected = !grid.visible,
-            onClick = { viewModel.setVisible(false) },
-            label = { Text(stringResource(R.string.grid_visible_off)) },
-        )
-    }
-}
-
-@Composable
-private fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_stroke_label), style = MaterialTheme.typography.titleMedium)
-    Slider(
-        value = grid.lineStyle.strokeWidthMm.toFloat(),
-        onValueChange = { viewModel.setStrokeWidthMm(it.toDouble()) },
-        valueRange = 0.05f..5f,
-    )
-    Text(
-        text = stringResource(
-            R.string.grid_stroke_value,
-            String.format(Locale.US, "%.2f", grid.lineStyle.strokeWidthMm),
-        ),
-        style = MaterialTheme.typography.bodySmall,
-    )
-}
-
-@Composable
-private fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_opacity_label), style = MaterialTheme.typography.titleMedium)
-    Slider(
-        value = grid.lineStyle.opacity,
-        onValueChange = viewModel::setOpacity,
-        valueRange = 0.05f..1f,
-    )
-    Text(
-        text = stringResource(R.string.grid_opacity_value, (grid.lineStyle.opacity * 100).toInt()),
-        style = MaterialTheme.typography.bodySmall,
-    )
-}
-
-@Composable
-private fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_color_label), style = MaterialTheme.typography.titleMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF000000,
-            onClick = { viewModel.setColorArgb(0xFF000000) },
-            label = { Text(stringResource(R.string.grid_color_black)) },
-        )
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF808080,
-            onClick = { viewModel.setColorArgb(0xFF808080) },
-            label = { Text(stringResource(R.string.grid_color_gray)) },
-        )
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF1565C0,
-            onClick = { viewModel.setColorArgb(0xFF1565C0) },
-            label = { Text(stringResource(R.string.grid_color_blue)) },
-        )
-    }
-}
-
-@Composable
-private fun GridSaveSection(uiState: GridConfigUiState, onSave: () -> Unit) {
-    Button(
-        onClick = onSave,
-        enabled = !uiState.isSaving,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(
-            text = when {
-                uiState.isSaving -> stringResource(R.string.paper_saving)
-                uiState.lastSaveSucceeded == true -> stringResource(R.string.paper_save_success)
-                uiState.lastSaveSucceeded == false -> stringResource(R.string.paper_save_error)
-                else -> stringResource(R.string.paper_save)
-            },
-        )
-    }
-}
-
-@Composable
-private fun IntField(
-    label: String,
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    OutlinedTextField(
-        value = value.toString(),
-        onValueChange = { text ->
-            text.toIntOrNull()?.let(onValueChange)
-        },
-        label = { Text(label) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier,
-    )
 }

@@ -42,6 +42,14 @@ data class GridConfigUiState(
     val measurePoint2Mm: Pair<Double, Double>? = null,
 )
 
+/** Distance in the paper's display unit, or null if both points are not set. */
+fun GridConfigUiState.measureDistanceDisplay(): Double? {
+    val p1 = measurePoint1Mm ?: return null
+    val p2 = measurePoint2Mm ?: return null
+    val mm = ViewportTransform.distanceMm(p1, p2)
+    return UnitConverter.fromMm(mm, paper.displayUnit)
+}
+
 @HiltViewModel
 class GridConfigViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
@@ -163,8 +171,6 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(lineStyle = lineStyle.copy(colorArgb = colorArgb)) }
     }
 
-    // --- Image transform (0.8.0) ---
-
     fun panImage(deltaXMm: Double, deltaYMm: Double) {
         updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
     }
@@ -188,8 +194,6 @@ class GridConfigViewModel @Inject constructor(
     fun resetImageTransform() {
         updateImage { ImageTransformCalculator.resetTransform(this) }
     }
-
-    // --- Distance measurement (0.9.0) ---
 
     fun setMeasureMode(enabled: Boolean) {
         _uiState.update {
@@ -219,15 +223,6 @@ class GridConfigViewModel @Inject constructor(
 
     fun clearMeasurePoints() {
         _uiState.update { it.copy(measurePoint1Mm = null, measurePoint2Mm = null) }
-    }
-
-    /** Distance in the paper's display unit, or null if both points are not set. */
-    fun measureDistanceDisplay(): Double? {
-        val state = _uiState.value
-        val p1 = state.measurePoint1Mm ?: return null
-        val p2 = state.measurePoint2Mm ?: return null
-        val mm = ViewportTransform.distanceMm(p1, p2)
-        return UnitConverter.fromMm(mm, state.paper.displayUnit)
     }
 
     private fun updateGrid(transform: Grid.() -> Grid) {
