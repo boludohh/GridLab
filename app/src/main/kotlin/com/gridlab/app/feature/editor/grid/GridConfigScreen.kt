@@ -342,7 +342,6 @@ private fun ImageOpacityControls(
     }
 }
 
-
 @Composable
 private fun DocumentPreview(
     paper: Paper,
@@ -566,6 +565,28 @@ private fun ReferenceImageLayer(
                 },
             ),
     )
+}
+
+private fun DrawScope.drawMeasureOverlay(
+    viewport: ViewportTransform,
+    p1: Pair<Double, Double>?,
+    p2: Pair<Double, Double>?,
+    color: Color,
+) {
+    val radius = 8f
+    if (p1 != null) {
+        val (x, y) = viewport.documentToScreenPx(p1.first, p1.second)
+        drawCircle(color = color, radius = radius, center = Offset(x, y))
+    }
+    if (p2 != null) {
+        val (x, y) = viewport.documentToScreenPx(p2.first, p2.second)
+        drawCircle(color = color, radius = radius, center = Offset(x, y))
+    }
+    if (p1 != null && p2 != null) {
+        val (x1, y1) = viewport.documentToScreenPx(p1.first, p1.second)
+        val (x2, y2) = viewport.documentToScreenPx(p2.first, p2.second)
+        drawLine(color = color, start = Offset(x1, y1), end = Offset(x2, y2), strokeWidth = 3f)
+    }
 }
 
 private fun DrawScope.drawGridLines(
