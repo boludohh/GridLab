@@ -51,6 +51,7 @@ fun GridConfigUiState.measureDistanceDisplay(): Double? {
 }
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class GridConfigViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
     private val imageStorage: ImageStorage,
@@ -223,6 +224,14 @@ class GridConfigViewModel @Inject constructor(
 
     fun clearMeasurePoints() {
         _uiState.update { it.copy(measurePoint1Mm = null, measurePoint2Mm = null) }
+    }
+
+    fun setCrop(left: Float, top: Float, right: Float, bottom: Float) {
+        updateImage { ImageTransformCalculator.withCrop(this, left, top, right, bottom) }
+    }
+
+    fun clearCrop() {
+        updateImage { ImageTransformCalculator.clearCrop(this) }
     }
 
     private fun updateGrid(transform: Grid.() -> Grid) {

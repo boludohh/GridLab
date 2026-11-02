@@ -59,4 +59,12 @@
     <string name="measure_hint">Tap two points on the paper preview</string>
     <string name="measure_clear">Clear points</string>
     <string name="measure_distance_value">Distance: %1$s %2$s</string>
+    <string name="crop_section_title">Non-destructive crop</string>
+    <string name="crop_hint">Adjust edges; original file is not modified</string>
+    <string name="crop_left">Left</string>
+    <string name="crop_top">Top</string>
+    <string name="crop_right">Right</string>
+    <string name="crop_bottom">Bottom</string>
+    <string name="crop_clear">Clear crop</string>
+    <string name="crop_active">Crop active</string>
 </resources>

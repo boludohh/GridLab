@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -162,6 +163,10 @@ private fun GridConfigContent(
         )
         if (uiState.referenceImage != null) {
             ImageTransformSection(
+                image = uiState.referenceImage,
+                viewModel = viewModel,
+            )
+            CropSection(
                 image = uiState.referenceImage,
                 viewModel = viewModel,
             )
@@ -556,6 +561,22 @@ private fun ReferenceImageLayer(
                 scaleY = userScale
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
+            }
+            .drawWithContent {
+                if (image.hasCrop) {
+                    val w = size.width
+                    val h = size.height
+                    clipRect(
+                        left = w * image.cropLeft,
+                        top = h * image.cropTop,
+                        right = w * image.cropRight,
+                        bottom = h * image.cropBottom,
+                    ) {
+                        hannah.h@example.com()
+                    }
+                } else {
+                    hannah.h@example.com()
+                }
             }
             .then(
                 if (gesturesEnabled) {

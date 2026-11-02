@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ReferenceImage
 import java.util.Locale
 
 @Composable
@@ -126,6 +127,84 @@ internal fun GridSaveSection(uiState: GridConfigUiState, onSave: () -> Unit) {
             },
         )
     }
+}
+
+
+@Composable
+internal fun CropSection(image: ReferenceImage, viewModel: GridConfigViewModel) {
+    Text(text = stringResource(R.string.crop_section_title), style = MaterialTheme.typography.titleMedium)
+    Text(
+        text = stringResource(R.string.crop_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (image.hasCrop) {
+        Text(
+            text = stringResource(R.string.crop_active),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+    CropEdgeSlider(
+        label = stringResource(R.string.crop_left),
+        value = image.cropLeft,
+        valueRange = 0f..(image.cropRight - 0.05f).coerceAtLeast(0f),
+        enabled = !image.locked,
+        onValueChange = { left ->
+            viewModel.setCrop(left, image.cropTop, image.cropRight, image.cropBottom)
+        },
+    )
+    CropEdgeSlider(
+        label = stringResource(R.string.crop_top),
+        value = image.cropTop,
+        valueRange = 0f..(image.cropBottom - 0.05f).coerceAtLeast(0f),
+        enabled = !image.locked,
+        onValueChange = { top ->
+            viewModel.setCrop(image.cropLeft, top, image.cropRight, image.cropBottom)
+        },
+    )
+    CropEdgeSlider(
+        label = stringResource(R.string.crop_right),
+        value = image.cropRight,
+        valueRange = (image.cropLeft + 0.05f).coerceAtMost(1f)..1f,
+        enabled = !image.locked,
+        onValueChange = { right ->
+            viewModel.setCrop(image.cropLeft, image.cropTop, right, image.cropBottom)
+        },
+    )
+    CropEdgeSlider(
+        label = stringResource(R.string.crop_bottom),
+        value = image.cropBottom,
+        valueRange = (image.cropTop + 0.05f).coerceAtMost(1f)..1f,
+        enabled = !image.locked,
+        onValueChange = { bottom ->
+            viewModel.setCrop(image.cropLeft, image.cropTop, image.cropRight, bottom)
+        },
+    )
+    OutlinedButton(
+        onClick = { viewModel.clearCrop() },
+        enabled = !image.locked && image.hasCrop,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = stringResource(R.string.crop_clear))
+    }
+}
+
+@Composable
+private fun CropEdgeSlider(
+    label: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    enabled: Boolean,
+    onValueChange: (Float) -> Unit,
+) {
+    Text(text = label, style = MaterialTheme.typography.bodyMedium)
+    Slider(
+        value = value.coerceIn(valueRange.start, valueRange.endInclusive),
+        onValueChange = onValueChange,
+        valueRange = if (valueRange.endInclusive > valueRange.start) valueRange else 0f..1f,
+        enabled = enabled,
+    )
 }
 
 @Composable
