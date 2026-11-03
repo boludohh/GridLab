@@ -40,6 +40,14 @@ class ImageStorage @Inject constructor(
     fun exists(relativePath: String): Boolean =
         resolveAbsoluteFile(relativePath).isFile
 
+    /** Deletes `projects/<documentId>/` recursively if present. Safe if missing. */
+    suspend fun deleteProjectDir(documentId: String) = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, "projects/" + documentId)
+        if (dir.exists()) {
+            dir.deleteRecursively()
+        }
+    }
+
     private fun guessExtension(uri: Uri): String {
         val type = context.contentResolver.getType(uri) ?: return UUID.randomUUID().toString() + ".jpg"
         return when (type) {

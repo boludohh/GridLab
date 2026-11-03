@@ -6,36 +6,37 @@
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Paper, Grid, Document | Document model | implemented |
-| `ReferenceImage.kt` | Path, transform, non-destructive crop | implemented (0.10.0) |
+| Document, Paper, Grid, ReferenceImage | Domain model | implemented |
 
 ## core/geometry
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| UnitConverter, GridCalculator | Pure geometry | implemented |
-| `ImageTransformCalculator.kt` | Pan, scale, opacity, lock, crop helpers | implemented (0.10.0) |
-| `ViewportTransform.kt` | Screen ↔ document mm; distance | implemented (0.9.0) |
+| UnitConverter, GridCalculator, ViewportTransform, ImageTransformCalculator | Pure geometry | implemented |
 
 ## core/data
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Room v3 (`referenceImageJson`) | Persistence | implemented |
-| `ImageStorage.kt` | Copy gallery URI → filesDir | implemented |
-| ProjectRepository | Load/save document | implemented |
+| ProjectDao | get/list/upsert/delete | implemented (0.11.0) |
+| ProjectRepository | CRUD + safe delete | implemented (0.11.0) |
+| ImageStorage | copy + deleteProjectDir | implemented (0.11.0) |
+
+## feature/projects
+
+| Path | Purpose | Status |
+|------|---------|--------|
+| ProjectListScreen / ViewModel | List, create, rename, delete | implemented (0.11.0) |
 
 ## feature/editor
 
 | Path | Purpose | Status |
 |------|---------|--------|
+| grid/* | Editor for one document | implemented |
 | paper/* | Paper config | implemented |
-| grid/GridConfigScreen.kt | Preview, image, measure | implemented |
-| grid/GridConfigSections.kt | Grid + crop UI sections | implemented (0.10.0) |
-| grid/GridConfigViewModel.kt | State + actions | implemented |
 
 ## Planned
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Guides / rulers | 0.11.0 | planned |
+| Autosave | 0.12.0 | planned |

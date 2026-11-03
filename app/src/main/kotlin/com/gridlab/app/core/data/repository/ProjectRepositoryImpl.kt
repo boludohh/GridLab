@@ -2,6 +2,7 @@ package com.gridlab.app.core.data.repository
 
 import com.gridlab.app.core.data.database.DocumentEntity
 import com.gridlab.app.core.data.database.ProjectDao
+import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
@@ -14,6 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class ProjectRepositoryImpl @Inject constructor(
     private val projectDao: ProjectDao,
+    private val imageStorage: ImageStorage,
 ) : ProjectRepository {
 
     private val json = Json {
@@ -27,8 +29,16 @@ class ProjectRepositoryImpl @Inject constructor(
     override suspend fun getLatestDocument(): Document? =
         projectDao.getLatest()?.toDomain()
 
+    override suspend fun listDocuments(): List<Document> =
+        projectDao.getAll().map { it.toDomain() }
+
     override suspend fun saveDocument(document: Document) {
         projectDao.upsert(document.toEntity())
+    }
+
+    override suspend fun deleteDocument(id: String) {
+        projectDao.deleteById(id)
+        imageStorage.deleteProjectDir(id)
     }
 
     private fun DocumentEntity.toDomain(): Document {

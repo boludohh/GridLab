@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -112,6 +113,8 @@ private class FractionalCropShape(
 
 @Composable
 fun GridConfigScreen(
+    documentId: String,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GridConfigViewModel = hiltViewModel(),
 ) {
@@ -120,6 +123,10 @@ fun GridConfigScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri != null) viewModel.importImage(uri)
+    }
+
+    LaunchedEffect(documentId) {
+        viewModel.openDocument(documentId)
     }
 
     if (uiState.isLoading) {
@@ -132,6 +139,7 @@ fun GridConfigScreen(
     GridConfigContent(
         uiState = uiState,
         viewModel = viewModel,
+        onBack = onBack,
         onImportClick = {
             pickImage.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -145,6 +153,7 @@ fun GridConfigScreen(
 private fun GridConfigContent(
     uiState: GridConfigUiState,
     viewModel: GridConfigViewModel,
+    onBack: () -> Unit,
     onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -170,6 +179,16 @@ private fun GridConfigContent(
             text = stringResource(R.string.grid_config_title),
             style = MaterialTheme.typography.headlineSmall,
         )
+        Text(
+            text = uiState.documentName,
+            style = MaterialTheme.typography.titleMedium,
+        )
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(R.string.projects_back))
+        }
         DocumentPreview(
             paper = paper,
             grid = grid,

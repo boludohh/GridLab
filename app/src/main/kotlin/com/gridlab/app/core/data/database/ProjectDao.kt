@@ -14,6 +14,12 @@ interface ProjectDao {
     @Query("SELECT * FROM documents ORDER BY updatedAtEpochMs DESC LIMIT 1")
     suspend fun getLatest(): DocumentEntity?
 
+    @Query("SELECT * FROM documents ORDER BY updatedAtEpochMs DESC")
+    suspend fun getAll(): List<DocumentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: DocumentEntity)
+
+    @Query("DELETE FROM documents WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

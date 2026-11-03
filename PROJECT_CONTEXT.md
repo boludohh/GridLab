@@ -1,18 +1,14 @@
 # GridLab — Project Context
 
-## Current version: 0.10.0
+## Current version: 0.11.0
 
-- Coil 3.6.3 for reference image display (downsampling)
-- Import from system photo picker (no storage permission)
-- Private copy under `filesDir/projects/<documentId>/`
-- Image transform: offset (mm), scale (relative to fit), opacity, lock, visibility
-- Non-destructive crop: normalized edges (0..1) on ReferenceImage; original file untouched
-- Gestures: drag to pan, pinch to scale (when unlocked)
-- Image drawn under grid; transform relative to initial fit placement
-- Distance measurement via ViewportTransform (screen ↔ document mm)
+- Project list: create, open, rename, delete
+- Safe delete: Room row first, then `filesDir/projects/<id>/`
+- Editor opens a specific document by id; back returns to project list
+- Coil image import/transform/crop, measure tool
 - Room DB v3; domain schemaVersion = 5
 - Document.schemaVersion = 5
 
 ## Next
 
-0.11.0 — Guides and rulers.
+0.12.0 — Autosave (debounce + onStop flush).

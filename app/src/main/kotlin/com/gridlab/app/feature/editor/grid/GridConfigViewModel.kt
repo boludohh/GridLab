@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 
 data class GridConfigUiState(
@@ -60,22 +59,37 @@ class GridConfigViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GridConfigUiState())
     val uiState: StateFlow<GridConfigUiState> = _uiState.asStateFlow()
 
-    init {
-        loadOrCreateDocument()
-    }
-
-    private fun loadOrCreateDocument() {
+    fun openDocument(documentId: String) {
+        if (documentId.isBlank()) return
         viewModelScope.launch {
-            val existing = projectRepository.getLatestDocument()
+            _uiState.update { it.copy(isLoading = true) }
+            val existing = projectRepository.getDocument(documentId)
             if (existing != null) {
                 applyDocument(existing)
             } else {
-                val created = Document.newDefault(
-                    id = UUID.randomUUID().toString(),
-                    name = "Untitled",
+                _uiState.update {
+                    it.copy(isLoading = false, importError = false)
+                }
+            }
+        }
+    }
+
+    fun renameDocument(newName: String) {
+        val name = newName.trim()
+        val state = _uiState.value
+        if (name.isEmpty() || state.documentId.isEmpty()) return
+        _uiState.update { it.copy(documentName = name, lastSaveSucceeded = null) }
+        viewModelScope.launch {
+            runCatching {
+                projectRepository.saveDocument(
+                    Document(
+                        id = state.documentId,
+                        name = name,
+                        paper = state.paper,
+                        grid = state.grid,
+                        referenceImage = state.referenceImage,
+                    ),
                 )
-                projectRepository.saveDocument(created)
-                applyDocument(created)
             }
         }
     }

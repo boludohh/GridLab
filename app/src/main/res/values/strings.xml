@@ -67,4 +67,18 @@
     <string name="crop_bottom">Bottom</string>
     <string name="crop_clear">Clear crop</string>
     <string name="crop_active">Crop active</string>
+    <string name="projects_title">Projects</string>
+    <string name="projects_create">New project</string>
+    <string name="projects_empty">No projects yet</string>
+    <string name="projects_rename">Rename</string>
+    <string name="projects_delete">Delete</string>
+    <string name="projects_rename_title">Rename project</string>
+    <string name="projects_name_label">Name</string>
+    <string name="projects_rename_confirm">Save</string>
+    <string name="projects_delete_title">Delete project?</string>
+    <string name="projects_delete_message">Delete "%1$s" and its private image files? This cannot be undone.</string>
+    <string name="projects_delete_confirm">Delete</string>
+    <string name="projects_cancel">Cancel</string>
+    <string name="projects_back">Back to projects</string>
+    <string name="projects_id_hint">id: %1$s…</string>
 </resources>
