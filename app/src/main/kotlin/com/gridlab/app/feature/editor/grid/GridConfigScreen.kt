@@ -64,6 +64,7 @@ import com.gridlab.app.core.geometry.GridCalculator
 import com.gridlab.app.core.geometry.GridLayout
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ImageAvailability
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
@@ -223,12 +224,15 @@ private fun GridConfigContent(
         )
         MeasureSection(uiState = uiState, viewModel = viewModel)
         ImageImportSection(
-            hasImage = uiState.imageAbsolutePath != null,
+            availability = uiState.imageAvailability,
             isImporting = uiState.isImporting,
             importError = uiState.importError,
             onImportClick = onImportClick,
+            onRemoveClick = { viewModel.removeReferenceImage() },
         )
-        if (uiState.referenceImage != null) {
+        if (uiState.imageAvailability == ImageAvailability.Present &&
+            uiState.referenceImage != null
+        ) {
             ImageTransformSection(
                 image = uiState.referenceImage,
                 viewModel = viewModel,
@@ -311,12 +315,30 @@ private fun unitLabel(unit: LengthUnit): String =
 
 @Composable
 private fun ImageImportSection(
-    hasImage: Boolean,
+    availability: ImageAvailability,
     isImporting: Boolean,
     importError: Boolean,
     onImportClick: () -> Unit,
+    onRemoveClick: () -> Unit,
 ) {
     Text(text = stringResource(R.string.image_section_title), style = MaterialTheme.typography.titleMedium)
+    when (availability) {
+        ImageAvailability.Missing -> {
+            Text(
+                text = stringResource(R.string.image_missing_message),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        ImageAvailability.Corrupt -> {
+            Text(
+                text = stringResource(R.string.image_corrupt_message),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        else -> Unit
+    }
     OutlinedButton(
         onClick = onImportClick,
         enabled = !isImporting,
@@ -325,10 +347,21 @@ private fun ImageImportSection(
         Text(
             text = when {
                 isImporting -> stringResource(R.string.image_importing)
-                hasImage -> stringResource(R.string.image_replace)
+                availability == ImageAvailability.Present -> stringResource(R.string.image_replace)
+                availability == ImageAvailability.Missing ||
+                    availability == ImageAvailability.Corrupt -> stringResource(R.string.image_relink)
                 else -> stringResource(R.string.image_import)
             },
         )
+    }
+    if (availability != ImageAvailability.None) {
+        OutlinedButton(
+            onClick = onRemoveClick,
+            enabled = !isImporting,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(R.string.image_remove_reference))
+        }
     }
     if (importError) {
         Text(

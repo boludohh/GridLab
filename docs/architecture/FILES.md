@@ -2,28 +2,28 @@
 
 ---
 
+## core/model
+
+| Path | Purpose | Status |
+|------|---------|--------|
+| `ImageAvailability.kt` | None / Present / Missing / Corrupt | implemented (0.13.0) |
+
 ## core/data
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| ProjectRepository | CRUD + safe delete | implemented |
-| ImageStorage | copy + deleteProjectDir | implemented |
-
-## feature/projects
-
-| Path | Purpose | Status |
-|------|---------|--------|
-| ProjectListScreen / ViewModel | Project list CRUD | implemented |
+| `ImageStorage.probe` | On-disk availability check | implemented (0.13.0) |
+| `ImageStorage.deleteRelativeFile` | Remove one image file | implemented (0.13.0) |
 
 ## feature/editor
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| GridConfigViewModel | Edits + debounced autosave + flushPendingSave | implemented (0.12.0) |
-| GridConfigScreen | ON_STOP / Back flush | implemented (0.12.0) |
+| GridConfigViewModel | removeReferenceImage; re-link via import | implemented (0.13.0) |
+| GridConfigScreen | Missing/corrupt UI | implemented (0.13.0) |
 
 ## Planned
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Image missing/corrupt handling | 0.13.0 | planned |
+| DocumentRenderer JPG export | 0.14.0 | planned |

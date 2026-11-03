@@ -10,6 +10,7 @@ import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ImageAvailability
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,8 +29,9 @@ data class GridConfigUiState(
     val paper: Paper = Paper.defaultA4(),
     val grid: Grid = Grid.default(),
     val referenceImage: ReferenceImage? = null,
-    /** Absolute path for Coil; null if no image or file missing. */
+    /** Absolute path for Coil; only set when [imageAvailability] is Present. */
     val imageAbsolutePath: String? = null,
+    val imageAvailability: ImageAvailability = ImageAvailability.None,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val isImporting: Boolean = false,
@@ -75,7 +77,13 @@ class GridConfigViewModel @Inject constructor(
                 applyDocument(existing)
             } else {
                 _uiState.update {
-                    it.copy(isLoading = false, importError = false, isDirty = false)
+                    it.copy(
+                        isLoading = false,
+                        importError = false,
+                        isDirty = false,
+                        imageAvailability = ImageAvailability.None,
+                        imageAbsolutePath = null,
+                    )
                 }
             }
         }
@@ -92,9 +100,13 @@ class GridConfigViewModel @Inject constructor(
     }
 
     private fun applyDocument(document: Document) {
-        val absPath = document.referenceImage?.relativePath?.let { relative ->
-            val file = imageStorage.resolveAbsoluteFile(relative)
-            if (file.isFile) file.absolutePath else null
+        val availability = imageStorage.probe(document.referenceImage?.relativePath)
+        val absPath = if (availability == ImageAvailability.Present) {
+            document.referenceImage?.relativePath?.let { relative ->
+                imageStorage.resolveAbsoluteFile(relative).absolutePath
+            }
+        } else {
+            null
         }
         _uiState.update {
             it.copy(
@@ -104,6 +116,7 @@ class GridConfigViewModel @Inject constructor(
                 grid = document.grid,
                 referenceImage = document.referenceImage,
                 imageAbsolutePath = absPath,
+                imageAvailability = availability,
                 isLoading = false,
                 lastSaveSucceeded = null,
                 importError = false,
@@ -112,13 +125,21 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Imports (or re-links) a gallery image. Always starts from default transform/crop
+     * so a re-link does not keep offsets that belonged to a different photo.
+     */
     fun importImage(uri: Uri) {
         val state = _uiState.value
         if (state.documentId.isEmpty() || state.isImporting) return
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true, importError = false) }
             runCatching {
+                val previousPath = state.referenceImage?.relativePath
                 val relative = imageStorage.copyFromUri(state.documentId, uri)
+                if (previousPath != null && previousPath != relative) {
+                    imageStorage.deleteRelativeFile(previousPath)
+                }
                 val ref = ReferenceImage.withPath(relative)
                 val updated = Document(
                     id = state.documentId,
@@ -133,6 +154,30 @@ class GridConfigViewModel @Inject constructor(
                 _uiState.update { it.copy(isImporting = false, isDirty = false) }
             }.onFailure {
                 _uiState.update { it.copy(isImporting = false, importError = true) }
+            }
+        }
+    }
+
+    /**
+     * Removes the reference image from the document without changing paper or grid.
+     * Deletes the private file when present.
+     */
+    fun removeReferenceImage() {
+        val state = _uiState.value
+        if (state.documentId.isEmpty() || state.referenceImage == null) return
+        viewModelScope.launch {
+            val path = state.referenceImage.relativePath
+            runCatching {
+                imageStorage.deleteRelativeFile(path)
+                val updated = Document(
+                    id = state.documentId,
+                    name = state.documentName,
+                    paper = state.paper,
+                    grid = state.grid,
+                    referenceImage = null,
+                )
+                projectRepository.saveDocument(updated)
+                applyDocument(updated)
             }
         }
     }

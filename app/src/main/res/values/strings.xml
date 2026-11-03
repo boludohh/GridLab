@@ -83,4 +83,8 @@
     <string name="projects_id_hint">id: %1$s…</string>
     <string name="paper_autosaved">Saved automatically</string>
     <string name="paper_dirty">Unsaved changes…</string>
+    <string name="image_missing_message">Reference image file is missing from device storage.</string>
+    <string name="image_corrupt_message">Reference image file is corrupt or unreadable.</string>
+    <string name="image_relink">Re-link image</string>
+    <string name="image_remove_reference">Remove reference</string>
 </resources>

@@ -4,6 +4,7 @@ package com.gridlab.app.core.data.storage
 
 import android.content.Context
 import android.net.Uri
+import com.gridlab.app.core.model.ImageAvailability
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -39,6 +40,32 @@ class ImageStorage @Inject constructor(
 
     fun exists(relativePath: String): Boolean =
         resolveAbsoluteFile(relativePath).isFile
+
+    /**
+     * Probes on-disk availability for a relative path stored in the document model.
+     * Empty or unreadable files are treated as [ImageAvailability.Corrupt].
+     */
+    fun probe(relativePath: String?): ImageAvailability {
+        if (relativePath.isNullOrBlank()) return ImageAvailability.None
+        val file = resolveAbsoluteFile(relativePath)
+        if (!file.isFile) return ImageAvailability.Missing
+        if (file.length() <= 0L) return ImageAvailability.Corrupt
+        return runCatching {
+            file.inputStream().use { stream ->
+                val header = ByteArray(16)
+                val read = stream.read(header)
+                if (read <= 0) ImageAvailability.Corrupt else ImageAvailability.Present
+            }
+        }.getOrDefault(ImageAvailability.Corrupt)
+    }
+
+    /** Deletes a single relative file if present. Safe if missing. */
+    suspend fun deleteRelativeFile(relativePath: String) = withContext(Dispatchers.IO) {
+        val file = resolveAbsoluteFile(relativePath)
+        if (file.isFile) {
+            file.delete()
+        }
+    }
 
     /** Deletes `projects/<documentId>/` recursively if present. Safe if missing. */
     suspend fun deleteProjectDir(documentId: String) = withContext(Dispatchers.IO) {
