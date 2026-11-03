@@ -1,14 +1,15 @@
 # GridLab — Project Context
 
-## Current version: 0.13.0
+## Current version: 0.15.0
 
-- Project list CRUD + editor by document id
-- Autosave: 800ms debounce; flush on ON_STOP and Back
-- Image availability: None / Present / Missing / Corrupt (probed on open)
-- Re-link resets transform/crop; remove reference keeps paper and grid
-- Coil image import/transform/crop, measure tool
+- Export JPG via DocumentRenderer (paper → image → grid, RGB_565)
+- DPI chips: 72 / 100 / 150 / 200 / 300
+- Memory-safe DPI from Runtime.maxMemory() with 40% safety factor
+- Unsafe DPI shows alternative instead of crashing
+- Files written under getExternalFilesDir()/exports/
+- Project CRUD, autosave, image availability, measure, crop
 - Room DB v3; domain schemaVersion = 5
 
 ## Next
 
-0.14.0 — Basic JPG export (DocumentRenderer, fixed DPI).
+0.16.0 — End-to-end polish (no new features).

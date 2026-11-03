@@ -247,6 +247,7 @@ private fun GridConfigContent(
         GridStrokeSection(grid = grid, viewModel = viewModel)
         GridOpacitySection(grid = grid, viewModel = viewModel)
         GridColorSection(grid = grid, viewModel = viewModel)
+        ExportSection(uiState = uiState, viewModel = viewModel)
         GridSaveSection(uiState = uiState, onSave = viewModel::saveDocument)
         Spacer(modifier = Modifier.height(8.dp))
     }
@@ -312,6 +313,93 @@ private fun unitLabel(unit: LengthUnit): String =
         LengthUnit.Centimeter -> stringResource(R.string.unit_cm)
         LengthUnit.Inch -> stringResource(R.string.unit_in)
     }
+
+
+@Composable
+private fun ExportSection(
+    uiState: GridConfigUiState,
+    viewModel: GridConfigViewModel,
+) {
+    Text(
+        text = stringResource(R.string.export_section_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Text(
+        text = stringResource(R.string.export_max_safe_dpi, uiState.maxSafeExportDpi),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        for (dpi in listOf(72, 100, 150, 200, 300)) {
+            FilterChip(
+                selected = uiState.selectedExportDpi == dpi,
+                onClick = { viewModel.setExportDpi(dpi) },
+                enabled = !uiState.isExporting,
+                label = { Text(text = stringResource(R.string.export_dpi_label, dpi)) },
+            )
+        }
+    }
+    OutlinedButton(
+        onClick = { viewModel.exportJpeg() },
+        enabled = !uiState.isExporting && uiState.documentId.isNotEmpty(),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = if (uiState.isExporting) {
+                stringResource(R.string.export_in_progress)
+            } else {
+                stringResource(R.string.export_action)
+            },
+        )
+    }
+    when (uiState.exportMessage) {
+        "OK" -> {
+            Text(
+                text = stringResource(
+                    R.string.export_success,
+                    uiState.lastExportPath.orEmpty(),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        "DPI_TOO_HIGH" -> {
+            Text(
+                text = stringResource(
+                    R.string.export_dpi_too_high,
+                    uiState.selectedExportDpi,
+                    uiState.maxSafeExportDpi,
+                ),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            OutlinedButton(
+                onClick = {
+                    viewModel.setExportDpi(uiState.maxSafeExportDpi)
+                    viewModel.exportJpeg()
+                },
+                enabled = !uiState.isExporting,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.export_use_safe_dpi,
+                        uiState.maxSafeExportDpi,
+                    ),
+                )
+            }
+        }
+        "FAILED" -> {
+            Text(
+                text = stringResource(R.string.export_failed),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
 
 @Composable
 private fun ImageImportSection(
