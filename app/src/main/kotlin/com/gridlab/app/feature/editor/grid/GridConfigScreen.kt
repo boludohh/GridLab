@@ -33,10 +33,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -45,6 +48,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,6 +86,29 @@ private data class PreviewInteraction(
     val onScale: (factor: Double) -> Unit,
     val onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
 )
+
+/** Clips to a normalized crop rect (0..1) of the layout bounds. */
+private class FractionalCropShape(
+    private val left: Float,
+    private val top: Float,
+    private val right: Float,
+    private val bottom: Float,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        return Outline.Rectangle(
+            Rect(
+                left = size.width * left,
+                top = size.height * top,
+                right = size.width * right,
+                bottom = size.height * bottom,
+            ),
+        )
+    }
+}
 
 @Composable
 fun GridConfigScreen(
@@ -556,27 +584,25 @@ private fun ReferenceImageLayer(
                 width = with(density) { layout.contentW.toDp() },
                 height = with(density) { layout.contentH.toDp() },
             )
+            .then(
+                if (image.hasCrop) {
+                    Modifier.clip(
+                        FractionalCropShape(
+                            left = image.cropLeft,
+                            top = image.cropTop,
+                            right = image.cropRight,
+                            bottom = image.cropBottom,
+                        ),
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .graphicsLayer {
                 scaleX = userScale
                 scaleY = userScale
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
-            }
-            .drawWithContent {
-                if (image.hasCrop) {
-                    val w = size.width
-                    val h = size.height
-                    clipRect(
-                        left = w * image.cropLeft,
-                        top = h * image.cropTop,
-                        right = w * image.cropRight,
-                        bottom = h * image.cropBottom,
-                    ) {
-                        drawContent()
-                    }
-                } else {
-                    drawContent()
-                }
             }
             .then(
                 if (gesturesEnabled) {
