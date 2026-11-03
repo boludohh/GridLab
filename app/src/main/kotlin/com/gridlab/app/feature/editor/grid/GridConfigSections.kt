@@ -124,6 +124,7 @@ internal fun GridSaveSection(uiState: GridConfigUiState, onSave: () -> Unit) {
                 uiState.isSaving -> stringResource(R.string.paper_saving)
                 uiState.lastSaveSucceeded == true -> stringResource(R.string.paper_save_success)
                 uiState.lastSaveSucceeded == false -> stringResource(R.string.paper_save_error)
+                uiState.isDirty -> stringResource(R.string.paper_dirty)
                 else -> stringResource(R.string.paper_save)
             },
         )

@@ -2,41 +2,28 @@
 
 ---
 
-## core/model
-
-| Path | Purpose | Status |
-|------|---------|--------|
-| Document, Paper, Grid, ReferenceImage | Domain model | implemented |
-
-## core/geometry
-
-| Path | Purpose | Status |
-|------|---------|--------|
-| UnitConverter, GridCalculator, ViewportTransform, ImageTransformCalculator | Pure geometry | implemented |
-
 ## core/data
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| ProjectDao | get/list/upsert/delete | implemented (0.11.0) |
-| ProjectRepository | CRUD + safe delete | implemented (0.11.0) |
-| ImageStorage | copy + deleteProjectDir | implemented (0.11.0) |
+| ProjectRepository | CRUD + safe delete | implemented |
+| ImageStorage | copy + deleteProjectDir | implemented |
 
 ## feature/projects
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| ProjectListScreen / ViewModel | List, create, rename, delete | implemented (0.11.0) |
+| ProjectListScreen / ViewModel | Project list CRUD | implemented |
 
 ## feature/editor
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| grid/* | Editor for one document | implemented |
-| paper/* | Paper config | implemented |
+| GridConfigViewModel | Edits + debounced autosave + flushPendingSave | implemented (0.12.0) |
+| GridConfigScreen | ON_STOP / Back flush | implemented (0.12.0) |
 
 ## Planned
 
 | Path | Purpose | Status |
 |------|---------|--------|
-| Autosave | 0.12.0 | planned |
+| Image missing/corrupt handling | 0.13.0 | planned |

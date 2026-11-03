@@ -81,4 +81,6 @@
     <string name="projects_cancel">Cancel</string>
     <string name="projects_back">Back to projects</string>
     <string name="projects_id_hint">id: %1$s…</string>
+    <string name="paper_autosaved">Saved automatically</string>
+    <string name="paper_dirty">Unsaved changes…</string>
 </resources>

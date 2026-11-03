@@ -13,6 +13,8 @@ import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +35,8 @@ data class GridConfigUiState(
     val isImporting: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
     val importError: Boolean = false,
+    /** True when local edits are not yet persisted. */
+    val isDirty: Boolean = false,
     /** When true, taps on the preview place measure points instead of transforming the image. */
     val measureMode: Boolean = false,
     /** First measure point in document mm (paper top-left origin), or null. */
@@ -59,16 +63,19 @@ class GridConfigViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GridConfigUiState())
     val uiState: StateFlow<GridConfigUiState> = _uiState.asStateFlow()
 
+    private var autosaveJob: Job? = null
+
     fun openDocument(documentId: String) {
         if (documentId.isBlank()) return
+        autosaveJob?.cancel()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, isDirty = false) }
             val existing = projectRepository.getDocument(documentId)
             if (existing != null) {
                 applyDocument(existing)
             } else {
                 _uiState.update {
-                    it.copy(isLoading = false, importError = false)
+                    it.copy(isLoading = false, importError = false, isDirty = false)
                 }
             }
         }
@@ -78,20 +85,10 @@ class GridConfigViewModel @Inject constructor(
         val name = newName.trim()
         val state = _uiState.value
         if (name.isEmpty() || state.documentId.isEmpty()) return
-        _uiState.update { it.copy(documentName = name, lastSaveSucceeded = null) }
-        viewModelScope.launch {
-            runCatching {
-                projectRepository.saveDocument(
-                    Document(
-                        id = state.documentId,
-                        name = name,
-                        paper = state.paper,
-                        grid = state.grid,
-                        referenceImage = state.referenceImage,
-                    ),
-                )
-            }
+        _uiState.update {
+            it.copy(documentName = name, lastSaveSucceeded = null, isDirty = true)
         }
+        scheduleAutosave()
     }
 
     private fun applyDocument(document: Document) {
@@ -110,6 +107,7 @@ class GridConfigViewModel @Inject constructor(
                 isLoading = false,
                 lastSaveSucceeded = null,
                 importError = false,
+                isDirty = false,
             )
         }
     }
@@ -132,32 +130,66 @@ class GridConfigViewModel @Inject constructor(
                 projectRepository.saveDocument(updated)
                 applyDocument(updated)
             }.onSuccess {
-                _uiState.update { it.copy(isImporting = false) }
+                _uiState.update { it.copy(isImporting = false, isDirty = false) }
             }.onFailure {
                 _uiState.update { it.copy(isImporting = false, importError = true) }
             }
         }
     }
 
+    /** Manual save from UI; also cancels a pending debounced autosave. */
     fun saveDocument() {
+        autosaveJob?.cancel()
+        viewModelScope.launch { persistIfDirty(showStatus = true) }
+    }
+
+    /**
+     * Immediate flush for lifecycle ON_STOP (and back navigation).
+     * Does not toggle the manual-save status labels.
+     */
+    fun flushPendingSave() {
+        autosaveJob?.cancel()
+        viewModelScope.launch { persistIfDirty(showStatus = false) }
+    }
+
+    private fun scheduleAutosave() {
+        autosaveJob?.cancel()
+        autosaveJob = viewModelScope.launch {
+            delay(AUTOSAVE_DEBOUNCE_MS)
+            persistIfDirty(showStatus = false)
+        }
+    }
+
+    private suspend fun persistIfDirty(showStatus: Boolean) {
         val state = _uiState.value
-        if (state.documentId.isEmpty() || state.isSaving) return
-        viewModelScope.launch {
+        if (!state.isDirty || state.documentId.isEmpty()) return
+        if (showStatus) {
             _uiState.update { it.copy(isSaving = true, lastSaveSucceeded = null) }
-            runCatching {
-                projectRepository.saveDocument(
-                    Document(
-                        id = state.documentId,
-                        name = state.documentName,
-                        paper = state.paper,
-                        grid = state.grid,
-                        referenceImage = state.referenceImage,
-                    ),
+        }
+        runCatching {
+            projectRepository.saveDocument(
+                Document(
+                    id = state.documentId,
+                    name = state.documentName,
+                    paper = state.paper,
+                    grid = state.grid,
+                    referenceImage = state.referenceImage,
+                ),
+            )
+        }.onSuccess {
+            _uiState.update {
+                it.copy(
+                    isDirty = false,
+                    isSaving = false,
+                    lastSaveSucceeded = if (showStatus) true else it.lastSaveSucceeded,
                 )
-            }.onSuccess {
-                _uiState.update { it.copy(isSaving = false, lastSaveSucceeded = true) }
-            }.onFailure {
-                _uiState.update { it.copy(isSaving = false, lastSaveSucceeded = false) }
+            }
+        }.onFailure {
+            _uiState.update {
+                it.copy(
+                    isSaving = false,
+                    lastSaveSucceeded = if (showStatus) false else it.lastSaveSucceeded,
+                )
             }
         }
     }
@@ -250,8 +282,13 @@ class GridConfigViewModel @Inject constructor(
 
     private fun updateGrid(transform: Grid.() -> Grid) {
         _uiState.update { state ->
-            state.copy(grid = state.grid.transform(), lastSaveSucceeded = null)
+            state.copy(
+                grid = state.grid.transform(),
+                lastSaveSucceeded = null,
+                isDirty = true,
+            )
         }
+        scheduleAutosave()
     }
 
     private fun updateImage(transform: ReferenceImage.() -> ReferenceImage) {
@@ -260,11 +297,14 @@ class GridConfigViewModel @Inject constructor(
             state.copy(
                 referenceImage = current.transform(),
                 lastSaveSucceeded = null,
+                isDirty = true,
             )
         }
+        scheduleAutosave()
     }
 
     companion object {
         const val MAX_DIVISIONS: Int = 100
+        const val AUTOSAVE_DEBOUNCE_MS: Long = 800L
     }
 }
