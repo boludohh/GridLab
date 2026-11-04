@@ -36,6 +36,14 @@ object ImageTransformCalculator {
     fun withVisible(image: ReferenceImage, visible: Boolean): ReferenceImage =
         image.copy(visible = visible)
 
+    /** Sets rotation in degrees (normalized to 0..360). Does nothing when locked. */
+    fun withRotation(image: ReferenceImage, degrees: Float): ReferenceImage {
+        if (image.locked) return image
+        var d = degrees % 360f
+        if (d < 0f) d += 360f
+        return image.copy(rotationDegrees = d)
+    }
+
     /**
      * Sets normalized crop rect. Edges are clamped and ordered so left < right and top < bottom
      * with a minimum span. Does nothing when locked.

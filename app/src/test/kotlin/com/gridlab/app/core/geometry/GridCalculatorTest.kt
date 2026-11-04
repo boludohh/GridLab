@@ -81,4 +81,31 @@ class GridCalculatorTest {
         assertEquals(paper.printableWidthMm / 4.0, layout.cellWidthMm, 1e-9)
         assertEquals(paper.printableHeightMm / 2.0, layout.cellHeightMm, 1e-9)
     }
+
+
+    @Test
+    fun `secondary divisions add interior lines only`() {
+        val paper = Paper.fromStandard(StandardPaperFormat.A4)
+        val grid = Grid(
+            rows = 2,
+            columns = 2,
+            secondaryDivisions = 2,
+            secondaryVisible = true,
+        )
+        val layout = GridCalculator.calculate(paper, grid)
+        // 2 cols * 1 secondary per cell = 2 secondary vertical lines
+        assertEquals(2, layout.secondaryVerticalXsMm.size)
+        assertEquals(2, layout.secondaryHorizontalYsMm.size)
+        assertTrue(layout.secondaryVerticalXsMm.none { it in layout.verticalLineXsMm })
+    }
+
+    @Test
+    fun `secondary hidden yields empty secondary lists`() {
+        val paper = Paper.fromStandard(StandardPaperFormat.A4)
+        val grid = Grid(secondaryDivisions = 4, secondaryVisible = false)
+        val layout = GridCalculator.calculate(paper, grid)
+        assertTrue(layout.secondaryVerticalXsMm.isEmpty())
+        assertTrue(layout.secondaryHorizontalYsMm.isEmpty())
+    }
+
 }

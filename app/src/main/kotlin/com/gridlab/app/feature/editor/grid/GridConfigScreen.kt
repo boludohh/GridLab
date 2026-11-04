@@ -245,6 +245,7 @@ private fun GridConfigContent(
         }
         GridSizeSection(grid = grid, viewModel = viewModel)
         GridVisibilitySection(grid = grid, viewModel = viewModel)
+        GridSecondarySection(grid = grid, viewModel = viewModel)
         GridStrokeSection(grid = grid, viewModel = viewModel)
         GridOpacitySection(grid = grid, viewModel = viewModel)
         GridColorSection(grid = grid, viewModel = viewModel)
@@ -488,6 +489,7 @@ private fun ImageTransformSection(
     )
     ImageVisibilityLockChips(image = image, viewModel = viewModel)
     ImageOpacityControls(image = image, viewModel = viewModel)
+    ImageRotationControls(image = image, viewModel = viewModel)
 }
 
 @Composable
@@ -554,6 +556,31 @@ private fun ImageOpacityControls(
     ) {
         Text(text = stringResource(R.string.image_reset_transform))
     }
+}
+
+
+@Composable
+private fun ImageRotationControls(
+    image: ReferenceImage,
+    viewModel: GridConfigViewModel,
+) {
+    Text(
+        text = stringResource(R.string.image_rotation_label),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Slider(
+        value = image.rotationDegrees,
+        onValueChange = { viewModel.setImageRotation(it) },
+        valueRange = 0f..360f,
+        enabled = !image.locked,
+    )
+    Text(
+        text = stringResource(
+            R.string.image_rotation_value,
+            String.format(Locale.US, "%.0f", image.rotationDegrees),
+        ),
+        style = MaterialTheme.typography.bodySmall,
+    )
 }
 
 @Composable
@@ -773,6 +800,7 @@ private fun ReferenceImageLayer(
             .graphicsLayer {
                 scaleX = userScale
                 scaleY = userScale
+                rotationZ = image.rotationDegrees
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
             }
@@ -838,5 +866,28 @@ private fun DrawScope.drawGridLines(
     for (yMm in layout.horizontalLineYsMm) {
         val y = contentOriginY + (yMm * scale).toFloat()
         drawLine(lineColor, Offset(contentOriginX, y), Offset(contentOriginX + contentW, y), strokePx)
+    }
+    if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
+        val secondaryColor = Color(grid.secondaryLineStyle.colorArgb.toInt())
+            .copy(alpha = grid.secondaryLineStyle.opacity)
+        val secondaryStroke = (grid.secondaryLineStyle.strokeWidthMm * scale).toFloat().coerceAtLeast(0.5f)
+        for (xMm in layout.secondaryVerticalXsMm) {
+            val x = contentOriginX + (xMm * scale).toFloat()
+            drawLine(
+                secondaryColor,
+                Offset(x, contentOriginY),
+                Offset(x, contentOriginY + contentH),
+                secondaryStroke,
+            )
+        }
+        for (yMm in layout.secondaryHorizontalYsMm) {
+            val y = contentOriginY + (yMm * scale).toFloat()
+            drawLine(
+                secondaryColor,
+                Offset(contentOriginX, y),
+                Offset(contentOriginX + contentW, y),
+                secondaryStroke,
+            )
+        }
     }
 }

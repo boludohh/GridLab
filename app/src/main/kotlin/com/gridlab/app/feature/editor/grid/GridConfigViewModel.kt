@@ -296,6 +296,14 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(lineStyle = lineStyle.copy(colorArgb = colorArgb)) }
     }
 
+    fun setSecondaryDivisions(divisions: Int) {
+        updateGrid { copy(secondaryDivisions = divisions.coerceIn(1, MAX_SECONDARY_DIVISIONS)) }
+    }
+
+    fun setSecondaryVisible(visible: Boolean) {
+        updateGrid { copy(secondaryVisible = visible) }
+    }
+
     fun panImage(deltaXMm: Double, deltaYMm: Double) {
         updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
     }
@@ -318,6 +326,10 @@ class GridConfigViewModel @Inject constructor(
 
     fun resetImageTransform() {
         updateImage { ImageTransformCalculator.resetTransform(this) }
+    }
+
+    fun setImageRotation(degrees: Float) {
+        updateImage { ImageTransformCalculator.withRotation(this, degrees) }
     }
 
     fun setMeasureMode(enabled: Boolean) {

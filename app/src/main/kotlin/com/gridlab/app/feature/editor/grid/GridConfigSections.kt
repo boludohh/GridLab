@@ -59,6 +59,41 @@ internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
     }
 }
 
+
+@Composable
+internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
+    Text(
+        text = stringResource(R.string.grid_secondary_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = grid.secondaryVisible,
+            onClick = { viewModel.setSecondaryVisible(true) },
+            label = { Text(stringResource(R.string.grid_secondary_on)) },
+        )
+        FilterChip(
+            selected = !grid.secondaryVisible,
+            onClick = { viewModel.setSecondaryVisible(false) },
+            label = { Text(stringResource(R.string.grid_secondary_off)) },
+        )
+    }
+    Text(
+        text = stringResource(R.string.grid_secondary_divisions_label),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (n in listOf(2, 3, 4, 5)) {
+            FilterChip(
+                selected = grid.secondaryDivisions == n,
+                onClick = { viewModel.setSecondaryDivisions(n) },
+                enabled = grid.secondaryVisible,
+                label = { Text(text = stringResource(R.string.grid_secondary_divisions_value, n)) },
+            )
+        }
+    }
+}
+
 @Composable
 internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
     Text(text = stringResource(R.string.grid_stroke_label), style = MaterialTheme.typography.titleMedium)

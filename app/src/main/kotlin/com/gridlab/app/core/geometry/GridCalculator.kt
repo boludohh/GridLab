@@ -12,17 +12,21 @@ data class GridLayout(
     val printableHeightMm: Double,
     val cellWidthMm: Double,
     val cellHeightMm: Double,
-    /** X positions of vertical lines, including left (0) and right edges. */
+    /** X positions of primary vertical lines, including left (0) and right edges. */
     val verticalLineXsMm: List<Double>,
-    /** Y positions of horizontal lines, including top (0) and bottom edges. */
+    /** Y positions of primary horizontal lines, including top (0) and bottom edges. */
     val horizontalLineYsMm: List<Double>,
+    /**
+     * Secondary vertical lines only (excludes positions that coincide with primary lines).
+     * Empty when secondary is off or divisions == 1.
+     */
+    val secondaryVerticalXsMm: List<Double> = emptyList(),
+    /** Secondary horizontal lines only (excludes primary positions). */
+    val secondaryHorizontalYsMm: List<Double> = emptyList(),
 )
 
 /**
  * Pure-Kotlin grid math. No Android dependencies.
- *
- * Division uses floating point so non-integer remainders are distributed
- * evenly across cells (last line lands exactly on the printable edge).
  */
 object GridCalculator {
 
@@ -46,6 +50,29 @@ object GridCalculator {
             }
         }
 
+        val secondaryV: List<Double>
+        val secondaryH: List<Double>
+        val div = grid.secondaryDivisions
+        if (grid.secondaryVisible && div > 1) {
+            secondaryV = buildList {
+                for (c in 0 until cols) {
+                    for (s in 1 until div) {
+                        add(c * cellWidth + cellWidth * s / div)
+                    }
+                }
+            }
+            secondaryH = buildList {
+                for (r in 0 until rows) {
+                    for (s in 1 until div) {
+                        add(r * cellHeight + cellHeight * s / div)
+                    }
+                }
+            }
+        } else {
+            secondaryV = emptyList()
+            secondaryH = emptyList()
+        }
+
         return GridLayout(
             printableWidthMm = width,
             printableHeightMm = height,
@@ -53,6 +80,8 @@ object GridCalculator {
             cellHeightMm = cellHeight,
             verticalLineXsMm = vertical,
             horizontalLineYsMm = horizontal,
+            secondaryVerticalXsMm = secondaryV,
+            secondaryHorizontalYsMm = secondaryH,
         )
     }
 }

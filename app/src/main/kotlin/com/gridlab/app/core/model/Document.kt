@@ -14,7 +14,7 @@ data class Document(
     val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 5
+        const val CURRENT_SCHEMA_VERSION: Int = 6
 
         fun newDefault(id: String, name: String): Document =
             Document(

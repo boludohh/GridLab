@@ -153,7 +153,12 @@ class DocumentRenderer @Inject constructor() {
             val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
                 alpha = (image.opacity * 255).toInt().coerceIn(0, 255)
             }
+            val save = canvas.save()
+            if (image.rotationDegrees != 0f) {
+                canvas.rotate(image.rotationDegrees, centerX, centerY)
+            }
             canvas.drawBitmap(decoded, srcRect, dst, paint)
+            canvas.restoreToCount(save)
         } finally {
             if (!decoded.isRecycled) {
                 decoded.recycle()
@@ -184,6 +189,24 @@ class DocumentRenderer @Inject constructor() {
         for (yMm in layout.horizontalLineYsMm) {
             val y = marginTop + (yMm * pxPerMm).toFloat()
             canvas.drawLine(marginLeft, y, marginLeft + contentW, y, paint)
+        }
+        if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
+            val secondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = document.grid.secondaryLineStyle.colorArgb.toInt()
+                alpha = (document.grid.secondaryLineStyle.opacity * 255).toInt().coerceIn(0, 255)
+                strokeWidth = (document.grid.secondaryLineStyle.strokeWidthMm * pxPerMm)
+                    .toFloat()
+                    .coerceAtLeast(0.5f)
+                style = Paint.Style.STROKE
+            }
+            for (xMm in layout.secondaryVerticalXsMm) {
+                val x = marginLeft + (xMm * pxPerMm).toFloat()
+                canvas.drawLine(x, marginTop, x, marginTop + contentH, secondaryPaint)
+            }
+            for (yMm in layout.secondaryHorizontalYsMm) {
+                val y = marginTop + (yMm * pxPerMm).toFloat()
+                canvas.drawLine(marginLeft, y, marginLeft + contentW, y, secondaryPaint)
+            }
         }
     }
 

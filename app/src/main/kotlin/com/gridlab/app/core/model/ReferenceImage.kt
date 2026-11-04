@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * Transform is relative to the initial "fit" placement inside the printable area:
  * - [offsetXMm] / [offsetYMm]: extra translation in millimeters from the fitted top-left.
  * - [scale]: multiplier on top of the fitted size (1.0 = fitted).
- * - [rotationDegrees]: prepared for a future UI; not exposed yet.
+ * - [rotationDegrees]: clockwise rotation in degrees around the fitted center.
  *
  * Non-destructive crop ([cropLeft]..[cropBottom]) is in normalized image coordinates
  * (0..1). The file on disk is never modified; clearing crop restores the full image.
