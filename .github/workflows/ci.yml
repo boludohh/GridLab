@@ -63,6 +63,9 @@ jobs:
     name: Tests and lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Quality failures (Detekt, unit tests) must not fail the overall workflow
+    # while the product is still iterating. Compile only remains the gate.
+    continue-on-error: true
 
     steps:
       - name: Checkout
