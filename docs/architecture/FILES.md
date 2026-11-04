@@ -2,27 +2,31 @@
 
 ---
 
-## core/geometry
+## Status: 0.16.0 (end-to-end usable)
 
-| Path | Purpose | Status |
-|------|---------|--------|
-| `ExportSizeCalculator.kt` | mm→px, max safe DPI | implemented (0.14/0.15) |
+Core flow is complete for daily use on device:
 
-## core/render
+`projects → editor (grid + image + measure) → autosave → export JPG`
 
-| Path | Purpose | Status |
-|------|---------|--------|
-| `DocumentRenderer.kt` | Offscreen RGB_565 JPEG export | implemented (0.14/0.15) |
+## core/
 
-## feature/editor
+| Area | Status |
+|------|--------|
+| model, geometry, data, storage, render | implemented |
 
-| Path | Purpose | Status |
-|------|---------|--------|
-| GridConfigViewModel.exportJpeg | DPI check + export | implemented |
-| GridConfigScreen.ExportSection | DPI UI + feedback | implemented |
+## feature/
 
-## Planned
+| Area | Status |
+|------|--------|
+| projects | list CRUD |
+| editor/grid | full editor + export |
+| editor/paper | exists; not linked in main nav yet |
 
-| Path | Purpose | Status |
-|------|---------|--------|
-| 0.16.0 polish | Integration only | planned |
+## Planned (Stage 6, batched)
+
+| Versions | Features |
+|----------|----------|
+| 0.17 + 0.18 | Rotation UI, secondary grid |
+| 0.19 + 0.20 | Labels, image filters (if in scope) |
+| 0.21 + 0.22 | PNG + PDF export |
+| 0.23 + 0.24 | Settings, storage info |

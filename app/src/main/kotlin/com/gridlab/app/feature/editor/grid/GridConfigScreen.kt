@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -330,15 +331,26 @@ private fun ExportSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         for (dpi in listOf(72, 100, 150, 200, 300)) {
+            val safe = dpi <= uiState.maxSafeExportDpi
             FilterChip(
                 selected = uiState.selectedExportDpi == dpi,
                 onClick = { viewModel.setExportDpi(dpi) },
                 enabled = !uiState.isExporting,
-                label = { Text(text = stringResource(R.string.export_dpi_label, dpi)) },
+                label = {
+                    Text(
+                        text = if (safe) {
+                            stringResource(R.string.export_dpi_label, dpi)
+                        } else {
+                            stringResource(R.string.export_dpi_label_unsafe, dpi)
+                        },
+                    )
+                },
             )
         }
     }

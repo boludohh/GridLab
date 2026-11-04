@@ -1,15 +1,17 @@
 # GridLab — Project Context
 
-## Current version: 0.15.0
+## Current version: 0.16.0
 
-- Export JPG via DocumentRenderer (paper → image → grid, RGB_565)
-- DPI chips: 72 / 100 / 150 / 200 / 300
-- Memory-safe DPI from Runtime.maxMemory() with 40% safety factor
-- Unsafe DPI shows alternative instead of crashing
-- Files written under getExternalFilesDir()/exports/
-- Project CRUD, autosave, image availability, measure, crop
-- Room DB v3; domain schemaVersion = 5
+First end-to-end usable milestone (no new product features vs 0.15):
+
+- Projects: create, open, rename, delete
+- Editor: grid, reference image (transform, crop, lock/hide), measure, autosave
+- Image availability: Present / Missing / Corrupt with re-link or remove
+- Export JPG: DPI chips, RGB_565, memory-safe DPI alternative
+- Polish: scrollable DPI row, default export DPI clamped to safe max, clearer project list copy
+
+Room DB v3; domain schemaVersion = 5
 
 ## Next
 
-0.16.0 — End-to-end polish (no new features).
+0.17.0 + 0.18.0 — Image rotation UI and secondary grid (batched).

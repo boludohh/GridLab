@@ -54,6 +54,11 @@ fun ProjectListScreen(
             text = stringResource(R.string.projects_title),
             style = MaterialTheme.typography.headlineSmall,
         )
+        Text(
+            text = stringResource(R.string.projects_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { viewModel.createProject(onOpenProject) },

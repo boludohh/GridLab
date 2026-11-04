@@ -135,12 +135,25 @@ class GridConfigViewModel @Inject constructor(
                 lastSaveSucceeded = null,
                 importError = false,
                 isDirty = false,
-                maxSafeExportDpi = ExportSizeCalculator.maxSafeDpi(
-                    widthMm = document.paper.widthMm,
-                    heightMm = document.paper.heightMm,
-                    maxMemoryBytes = Runtime.getRuntime().maxMemory(),
-                ),
+                maxSafeExportDpi = run {
+                    val safe = ExportSizeCalculator.maxSafeDpi(
+                        widthMm = document.paper.widthMm,
+                        heightMm = document.paper.heightMm,
+                        maxMemoryBytes = Runtime.getRuntime().maxMemory(),
+                    )
+                    safe
+                },
+                selectedExportDpi = run {
+                    val safe = ExportSizeCalculator.maxSafeDpi(
+                        widthMm = document.paper.widthMm,
+                        heightMm = document.paper.heightMm,
+                        maxMemoryBytes = Runtime.getRuntime().maxMemory(),
+                    )
+                    val preferred = 150
+                    minOf(preferred, safe).coerceAtLeast(1)
+                },
                 exportMessage = null,
+                lastExportPath = null,
             )
         }
     }

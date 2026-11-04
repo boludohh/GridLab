@@ -54,7 +54,7 @@ class ProjectListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isWorking = true, errorMessage = null) }
             val id = UUID.randomUUID().toString()
-            val doc = Document.newDefault(id = id, name = "Untitled")
+            val doc = Document.newDefault(id = id, name = "Project " + id.take(8))
             runCatching {
                 projectRepository.saveDocument(doc)
                 id
