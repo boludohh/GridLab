@@ -93,6 +93,9 @@
     <string name="export_dpi_label_unsafe">%1$d DPI (high)</string>
     <string name="export_max_safe_dpi">Max safe DPI on this device: %1$d</string>
     <string name="export_action">Export JPG</string>
+    <string name="export_action_jpg">Export JPG</string>
+    <string name="export_action_png">Export PNG</string>
+    <string name="export_action_pdf">Export PDF</string>
     <string name="export_in_progress">Exporting…</string>
     <string name="export_success">Exported: %1$s</string>
     <string name="export_failed">Export failed</string>

@@ -366,18 +366,33 @@ private fun ExportSection(
             )
         }
     }
+    val exportEnabled = !uiState.isExporting && uiState.documentId.isNotEmpty()
+    if (uiState.isExporting) {
+        Text(
+            text = stringResource(R.string.export_in_progress),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
     OutlinedButton(
         onClick = { viewModel.exportJpeg() },
-        enabled = !uiState.isExporting && uiState.documentId.isNotEmpty(),
+        enabled = exportEnabled,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = if (uiState.isExporting) {
-                stringResource(R.string.export_in_progress)
-            } else {
-                stringResource(R.string.export_action)
-            },
-        )
+        Text(text = stringResource(R.string.export_action_jpg))
+    }
+    OutlinedButton(
+        onClick = { viewModel.exportPng() },
+        enabled = exportEnabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = stringResource(R.string.export_action_png))
+    }
+    OutlinedButton(
+        onClick = { viewModel.exportPdf() },
+        enabled = exportEnabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = stringResource(R.string.export_action_pdf))
     }
     when (uiState.exportMessage) {
         "OK" -> {

@@ -1,14 +1,16 @@
 # GridLab — Project Context
 
-## Current version: 0.20.0
+## Current version: 0.22.0
 
-Includes 0.19.0 + 0.20.0:
+Includes 0.21.0 + 0.22.0:
 
-- Grid labels: columns 1..N, rows A, B, … (preview + export)
-- Image filters: None / Grayscale / High contrast (non-destructive; file unchanged)
+- Export JPG / PNG / PDF at selected DPI (shared DocumentRenderer pipeline)
+- PDF: single page via android.graphics.pdf.PdfDocument
+- Memory-safe DPI check applies to all formats
 - Domain schemaVersion = 7
-- Prior: rotation, secondary grid, export JPG, projects, autosave
+
+Deferred: 0.23 settings, 0.24 storage info.
 
 ## Next
 
-0.21.0 + 0.22.0 — PNG and PDF export.
+0.23.0 + 0.24.0 when ready, or Detekt cleanup / 1.0.0.

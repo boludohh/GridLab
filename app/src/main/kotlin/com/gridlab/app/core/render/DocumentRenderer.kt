@@ -1,6 +1,7 @@
 package com.gridlab.app.core.render
 
 import android.graphics.Bitmap
+import android.graphics.pdf.PdfDocument
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
@@ -92,6 +93,60 @@ class DocumentRenderer @Inject constructor() {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(50, 100), out)
             }
         } finally {
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        return outputFile
+    }
+
+
+    /**
+     * Renders and compresses PNG into [outputFile]. Returns [outputFile] on success.
+     */
+    fun exportPng(
+        document: Document,
+        dpi: Int,
+        imageFile: File?,
+        outputFile: File,
+    ): File {
+        val bitmap = renderToBitmap(document, dpi, imageFile)
+        try {
+            outputFile.parentFile?.mkdirs()
+            FileOutputStream(outputFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        } finally {
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        return outputFile
+    }
+
+    /**
+     * Renders the document at [dpi] and writes a single-page PDF whose page size
+     * matches the rendered bitmap (pixels at that DPI).
+     */
+    fun exportPdf(
+        document: Document,
+        dpi: Int,
+        imageFile: File?,
+        outputFile: File,
+    ): File {
+        val bitmap = renderToBitmap(document, dpi, imageFile)
+        val pdf = PdfDocument()
+        try {
+            val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, 1).create()
+            val page = pdf.startPage(pageInfo)
+            page.canvas.drawBitmap(bitmap, 0f, 0f, null)
+            pdf.finishPage(page)
+            outputFile.parentFile?.mkdirs()
+            FileOutputStream(outputFile).use { out ->
+                pdf.writeTo(out)
+            }
+        } finally {
+            pdf.close()
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
             }

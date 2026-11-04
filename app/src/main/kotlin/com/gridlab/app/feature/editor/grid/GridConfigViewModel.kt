@@ -12,6 +12,7 @@ import com.gridlab.app.core.geometry.ImageTransformCalculator
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Document
+import com.gridlab.app.core.model.ExportFormat
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ImageAvailability
@@ -408,6 +409,18 @@ class GridConfigViewModel @Inject constructor(
     }
 
     fun exportJpeg() {
+        exportDocument(ExportFormat.Jpeg)
+    }
+
+    fun exportPng() {
+        exportDocument(ExportFormat.Png)
+    }
+
+    fun exportPdf() {
+        exportDocument(ExportFormat.Pdf)
+    }
+
+    private fun exportDocument(format: ExportFormat) {
         val state = _uiState.value
         if (state.documentId.isEmpty() || state.isExporting) return
         val paper = state.paper
@@ -444,8 +457,20 @@ class GridConfigViewModel @Inject constructor(
                     val dir = File(appContext.getExternalFilesDir(null), "exports")
                     val safeName = state.documentName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
                         .ifBlank { "export" }
-                    val out = File(dir, safeName + "_" + dpi + "dpi.jpg")
-                    documentRenderer.exportJpeg(document, dpi, imageFile, out)
+                    val extension = when (format) {
+                        ExportFormat.Jpeg -> "jpg"
+                        ExportFormat.Png -> "png"
+                        ExportFormat.Pdf -> "pdf"
+                    }
+                    val out = File(dir, safeName + "_" + dpi + "dpi." + extension)
+                    when (format) {
+                        ExportFormat.Jpeg ->
+                            documentRenderer.exportJpeg(document, dpi, imageFile, out)
+                        ExportFormat.Png ->
+                            documentRenderer.exportPng(document, dpi, imageFile, out)
+                        ExportFormat.Pdf ->
+                            documentRenderer.exportPdf(document, dpi, imageFile, out)
+                    }
                     out.absolutePath
                 }
             }.onSuccess { path ->
