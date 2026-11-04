@@ -1,16 +1,12 @@
 # GridLab — Project Context
 
-## Current version: 0.22.0
+## Current version: 0.22.0 + home UI
 
-Includes 0.21.0 + 0.22.0:
+- MainScreen + MainViewModel (home)
+- Banner, rotating EN taglines (2.5s), full-width New project with icon
+- Project list CRUD on home
+- Editor + JPG/PNG/PDF export unchanged
 
-- Export JPG / PNG / PDF at selected DPI (shared DocumentRenderer pipeline)
-- PDF: single page via android.graphics.pdf.PdfDocument
-- Memory-safe DPI check applies to all formats
-- Domain schemaVersion = 7
+## Deferred
 
-Deferred: 0.23 settings, 0.24 storage info.
-
-## Next
-
-0.23.0 + 0.24.0 when ready, or Detekt cleanup / 1.0.0.
+0.23 settings, 0.24 storage, Detekt cleanup, values-es.

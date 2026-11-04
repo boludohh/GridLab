@@ -1,4 +1,4 @@
-package com.gridlab.app.feature.projects
+package com.gridlab.app.feature.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
-data class ProjectListUiState(
+data class MainUiState(
     val projects: List<Document> = emptyList(),
     val isLoading: Boolean = true,
     val isWorking: Boolean = false,
@@ -21,12 +21,12 @@ data class ProjectListUiState(
 )
 
 @HiltViewModel
-class ProjectListViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ProjectListUiState())
-    val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(MainUiState())
+    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     init {
         refresh()

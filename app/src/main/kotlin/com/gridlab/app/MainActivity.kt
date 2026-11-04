@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.gridlab.app.feature.editor.grid.GridConfigScreen
-import com.gridlab.app.feature.projects.ProjectListScreen
+import com.gridlab.app.feature.main.MainScreen
 import com.gridlab.app.ui.theme.GridLabTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     val pad = Modifier.padding(innerPadding)
                     val documentId = openDocumentId
                     if (documentId == null) {
-                        ProjectListScreen(
+                        MainScreen(
                             onOpenProject = { id -> openDocumentId = id },
                             modifier = pad,
                         )
