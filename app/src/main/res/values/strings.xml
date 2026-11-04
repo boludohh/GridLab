@@ -68,6 +68,8 @@
     <string name="crop_clear">Clear crop</string>
     <string name="crop_active">Crop active</string>
     <string name="home_banner_content_description">GridLab drawing grid example</string>
+    <string name="home_tagline_subtitle">Turn your reference into a grid drawing.</string>
+    <string name="home_settings_content_description">Settings</string>
     <string-array name="home_taglines">
         <item>Draw with the grid</item>
         <item>From reference to paper</item>
