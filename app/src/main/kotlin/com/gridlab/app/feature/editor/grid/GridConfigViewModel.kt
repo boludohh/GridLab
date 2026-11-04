@@ -467,6 +467,7 @@ class GridConfigViewModel @Inject constructor(
 
     companion object {
         const val MAX_DIVISIONS: Int = 100
+        const val MAX_SECONDARY_DIVISIONS: Int = 8
         const val AUTOSAVE_DEBOUNCE_MS: Long = 800L
     }
 }
