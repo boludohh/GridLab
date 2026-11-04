@@ -3,7 +3,6 @@ package com.gridlab.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -14,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.gridlab.app.feature.editor.grid.GridConfigScreen
 import com.gridlab.app.feature.main.MainScreen
+import com.gridlab.app.ui.configureEdgeToEdge
 import com.gridlab.app.ui.theme.GridLabTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,7 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        configureEdgeToEdge()
         setContent {
             GridLabTheme {
                 var openDocumentId by remember { mutableStateOf<String?>(null) }

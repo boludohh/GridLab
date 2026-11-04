@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -424,6 +427,18 @@ fun GridLabTheme(
         GridLabThemeMode.Light -> LightMaterialColorScheme to LightSemanticColors
         GridLabThemeMode.Dark -> DarkMaterialColorScheme to DarkSemanticColors
         GridLabThemeMode.Night -> NightMaterialColorScheme to NightSemanticColors
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+            val controller = WindowCompat.getInsetsController(window, view)
+            // Light theme → dark status/nav icons; Dark/Night → light icons
+            val lightIcons = themeMode == GridLabThemeMode.Light
+            controller.isAppearanceLightStatusBars = lightIcons
+            controller.isAppearanceLightNavigationBars = lightIcons
+        }
     }
 
     CompositionLocalProvider(LocalGridLabColors provides semanticColors) {
