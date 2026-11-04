@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -859,6 +860,47 @@ private fun DrawScope.drawMeasureOverlay(
         val (x1, y1) = viewport.documentToScreenPx(p1.first, p1.second)
         val (x2, y2) = viewport.documentToScreenPx(p2.first, p2.second)
         drawLine(color = color, start = Offset(x1, y1), end = Offset(x2, y2), strokeWidth = 3f)
+    }
+}
+
+
+private fun DrawScope.drawGridLabels(
+    layout: GridLayout,
+    grid: Grid,
+    originX: Float,
+    originY: Float,
+    scale: Float,
+    paper: Paper,
+) {
+    val contentOriginX = originX + paper.marginLeftMm.toFloat() * scale
+    val contentOriginY = originY + paper.marginTopMm.toFloat() * scale
+    val cellW = (layout.cellWidthMm * scale).toFloat()
+    val cellH = (layout.cellHeightMm * scale).toFloat()
+    val textSizePx = (2.5f * scale).coerceIn(10f, 36f)
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.BLACK
+        textSize = textSizePx
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+    drawContext.canvas.nativeCanvas.apply {
+        for (c in 0 until grid.columns) {
+            val x = contentOriginX + cellW * (c + 0.5f)
+            val y = (contentOriginY - 4f).coerceAtLeast(textSizePx)
+            drawText(GridLabelFormatter.columnLabel(c), x, y, paint)
+        }
+        paint.textAlign = android.graphics.Paint.Align.RIGHT
+        for (r in 0 until grid.rows) {
+            val y = contentOriginY + cellH * (r + 0.5f) + textSizePx * 0.35f
+            val x = contentOriginX - 4f
+            if (x > 8f) {
+                drawText(GridLabelFormatter.rowLabel(r), x, y, paint)
+            } else {
+                paint.textAlign = android.graphics.Paint.Align.LEFT
+                drawText(GridLabelFormatter.rowLabel(r), contentOriginX + 4f, y, paint)
+                paint.textAlign = android.graphics.Paint.Align.RIGHT
+            }
+        }
     }
 }
 

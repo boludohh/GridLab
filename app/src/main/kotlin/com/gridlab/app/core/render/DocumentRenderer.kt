@@ -222,6 +222,51 @@ class DocumentRenderer @Inject constructor() {
         }
     }
 
+
+    private fun drawGridLabels(
+        canvas: Canvas,
+        document: Document,
+        marginLeft: Float,
+        marginTop: Float,
+        pxPerMm: Double,
+    ) {
+        val layout = GridCalculator.calculate(document.paper, document.grid)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = (2.5 * pxPerMm).toFloat().coerceIn(8f, 48f)
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+        }
+        val cellW = (layout.cellWidthMm * pxPerMm).toFloat()
+        val cellH = (layout.cellHeightMm * pxPerMm).toFloat()
+        for (c in 0 until document.grid.columns) {
+            val x = marginLeft + cellW * (c + 0.5f)
+            val y = marginTop - paint.textSize * 0.25f
+            if (y > paint.textSize * 0.5f) {
+                canvas.drawText(GridLabelFormatter.columnLabel(c), x, y, paint)
+            } else {
+                canvas.drawText(
+                    GridLabelFormatter.columnLabel(c),
+                    x,
+                    marginTop + paint.textSize,
+                    paint,
+                )
+            }
+        }
+        paint.textAlign = Paint.Align.RIGHT
+        for (r in 0 until document.grid.rows) {
+            val y = marginTop + cellH * (r + 0.5f) + paint.textSize * 0.35f
+            val x = marginLeft - 2f
+            if (x > 4f) {
+                canvas.drawText(GridLabelFormatter.rowLabel(r), x, y, paint)
+            } else {
+                paint.textAlign = Paint.Align.LEFT
+                canvas.drawText(GridLabelFormatter.rowLabel(r), marginLeft + 2f, y, paint)
+                paint.textAlign = Paint.Align.RIGHT
+            }
+        }
+    }
+
     private fun calculateInSampleSize(srcW: Int, srcH: Int, reqW: Int, reqH: Int): Int {
         var inSampleSize = 1
         val safeReqW = reqW.coerceAtLeast(1)
