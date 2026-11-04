@@ -5,12 +5,8 @@ import kotlinx.serialization.Serializable
 /**
  * Main grid configuration for a document.
  *
- * Cell size is derived from the paper printable area and [rows]/[columns];
- * it is not stored as independent state.
- *
- * [secondaryDivisions] splits each primary cell into N×N secondary cells
- * (1 = no secondary lines). [secondaryVisible] and [secondaryLineStyle]
- * control drawing of those lines.
+ * [labelsVisible] draws column numbers (1..N) along the top and row letters
+ * (A, B, …) along the left edge of the printable area.
  */
 @Serializable
 data class Grid(
@@ -25,6 +21,7 @@ data class Grid(
         strokeWidthMm = 0.08,
         opacity = 0.45f,
     ),
+    val labelsVisible: Boolean = false,
 ) {
     init {
         require(rows >= 1) { "rows must be >= 1" }

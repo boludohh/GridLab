@@ -4,10 +4,15 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.Rect
 import android.graphics.RectF
 import com.gridlab.app.core.geometry.ExportSizeCalculator
+import com.gridlab.app.core.geometry.GridLabelFormatter
+import com.gridlab.app.core.geometry.ImageFilterMatrices
 import com.gridlab.app.core.geometry.GridCalculator
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.ReferenceImage
@@ -62,6 +67,9 @@ class DocumentRenderer @Inject constructor() {
 
         if (document.grid.visible) {
             drawGrid(canvas, document, marginLeft, marginTop, pxPerMm)
+            if (document.grid.labelsVisible) {
+                drawGridLabels(canvas, document, marginLeft, marginTop, pxPerMm)
+            }
         }
 
         return bitmap
@@ -152,6 +160,10 @@ class DocumentRenderer @Inject constructor() {
             )
             val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
                 alpha = (image.opacity * 255).toInt().coerceIn(0, 255)
+                val coeffs = ImageFilterMatrices.matrix(image.filter)
+                if (coeffs != null) {
+                    colorFilter = ColorMatrixColorFilter(ColorMatrix(coeffs))
+                }
             }
             val save = canvas.save()
             if (image.rotationDegrees != 0f) {

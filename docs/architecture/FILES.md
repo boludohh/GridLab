@@ -2,19 +2,19 @@
 
 ---
 
-## Status: 0.18.0
+## Status: 0.20.0
 
-| Area | Notes |
-|------|--------|
-| ReferenceImage.rotationDegrees | Exposed in UI + export |
-| Grid secondary* | Divisions, visibility, style |
-| GridCalculator | Secondary line positions |
-| DocumentRenderer | Rotation + secondary lines |
+| Path | Purpose |
+|------|---------|
+| `ImageFilter.kt` | None / Grayscale / HighContrast |
+| `GridLabelFormatter.kt` | Column numbers, row letters |
+| `ImageFilterMatrices.kt` | Color matrix coefficients |
+| Grid.labelsVisible | Label toggle |
+| ReferenceImage.filter | Non-destructive filter |
 
 ## Planned
 
 | Versions | Features |
 |----------|----------|
-| 0.19 + 0.20 | Labels, filters |
-| 0.21 + 0.22 | PNG + PDF |
+| 0.21 + 0.22 | PNG + PDF export |
 | 0.23 + 0.24 | Settings, storage info |

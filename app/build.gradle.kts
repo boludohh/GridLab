@@ -16,8 +16,8 @@ android {
         applicationId = "com.gridlab.app"
         minSdk = 27
         targetSdk = 37
-        versionCode = 18
-        versionName = "0.18.0"
+        versionCode = 20
+        versionName = "0.20.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

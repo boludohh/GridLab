@@ -44,6 +44,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
@@ -62,9 +64,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.gridlab.app.R
 import com.gridlab.app.core.geometry.GridCalculator
+import com.gridlab.app.core.geometry.GridLabelFormatter
+import com.gridlab.app.core.geometry.ImageFilterMatrices
 import com.gridlab.app.core.geometry.GridLayout
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ImageAvailability
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
@@ -242,10 +247,15 @@ private fun GridConfigContent(
                 image = uiState.referenceImage,
                 viewModel = viewModel,
             )
+            ImageFilterSection(
+                image = uiState.referenceImage,
+                viewModel = viewModel,
+            )
         }
         GridSizeSection(grid = grid, viewModel = viewModel)
         GridVisibilitySection(grid = grid, viewModel = viewModel)
         GridSecondarySection(grid = grid, viewModel = viewModel)
+        GridLabelsSection(grid = grid, viewModel = viewModel)
         GridStrokeSection(grid = grid, viewModel = viewModel)
         GridOpacitySection(grid = grid, viewModel = viewModel)
         GridColorSection(grid = grid, viewModel = viewModel)
@@ -629,6 +639,9 @@ private fun DocumentPreview(
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (grid.visible) {
                 drawGridLines(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
+                if (grid.labelsVisible) {
+                    drawGridLabels(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
+                }
             }
             drawMeasureOverlay(
                 viewport,
@@ -766,10 +779,14 @@ private fun ReferenceImageLayer(
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
     val gesturesEnabled = !image.locked
 
+    val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
+        ColorFilter.colorMatrix(ColorMatrix(coeffs))
+    }
     AsyncImage(
         model = File(imagePath),
         contentDescription = stringResource(R.string.image_content_description),
         contentScale = ContentScale.Fit,
+        colorFilter = colorFilter,
         modifier = Modifier
             .offset(
                 x = with(density) {

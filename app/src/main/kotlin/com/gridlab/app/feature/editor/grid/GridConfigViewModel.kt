@@ -13,6 +13,7 @@ import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ImageAvailability
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
@@ -304,6 +305,10 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(secondaryVisible = visible) }
     }
 
+    fun setLabelsVisible(visible: Boolean) {
+        updateGrid { copy(labelsVisible = visible) }
+    }
+
     fun panImage(deltaXMm: Double, deltaYMm: Double) {
         updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
     }
@@ -330,6 +335,10 @@ class GridConfigViewModel @Inject constructor(
 
     fun setImageRotation(degrees: Float) {
         updateImage { ImageTransformCalculator.withRotation(this, degrees) }
+    }
+
+    fun setImageFilter(filter: ImageFilter) {
+        updateImage { ImageTransformCalculator.withFilter(this, filter) }
     }
 
     fun setMeasureMode(enabled: Boolean) {

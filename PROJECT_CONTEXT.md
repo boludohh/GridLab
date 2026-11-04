@@ -1,14 +1,14 @@
 # GridLab — Project Context
 
-## Current version: 0.18.0
+## Current version: 0.20.0
 
-Includes 0.17.0 + 0.18.0:
+Includes 0.19.0 + 0.20.0:
 
-- Image rotation UI (0–360°, graphicsLayer + export)
-- Secondary grid: on/off, subdivisions per cell (2–5), distinct line style
-- Domain schemaVersion = 6 (additive Grid secondary fields)
-- Prior: projects, autosave, image availability, measure, crop, JPG export
+- Grid labels: columns 1..N, rows A, B, … (preview + export)
+- Image filters: None / Grayscale / High contrast (non-destructive; file unchanged)
+- Domain schemaVersion = 7
+- Prior: rotation, secondary grid, export JPG, projects, autosave
 
 ## Next
 
-0.19.0 + 0.20.0 — Grid labels/numbering and image filters (if in scope).
+0.21.0 + 0.22.0 — PNG and PDF export.

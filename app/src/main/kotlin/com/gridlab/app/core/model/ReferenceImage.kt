@@ -8,13 +8,8 @@ import kotlinx.serialization.Serializable
  * [relativePath] is relative to the app filesDir
  * (e.g. `projects/<documentId>/original.jpg`).
  *
- * Transform is relative to the initial "fit" placement inside the printable area:
- * - [offsetXMm] / [offsetYMm]: extra translation in millimeters from the fitted top-left.
- * - [scale]: multiplier on top of the fitted size (1.0 = fitted).
- * - [rotationDegrees]: clockwise rotation in degrees around the fitted center.
- *
- * Non-destructive crop ([cropLeft]..[cropBottom]) is in normalized image coordinates
- * (0..1). The file on disk is never modified; clearing crop restores the full image.
+ * Transform is relative to the initial "fit" placement inside the printable area.
+ * [filter] is a non-destructive display/export effect; the file is never modified.
  */
 @Serializable
 data class ReferenceImage(
@@ -26,14 +21,11 @@ data class ReferenceImage(
     val opacity: Float = 1f,
     val locked: Boolean = false,
     val visible: Boolean = true,
-    /** Normalized crop left edge (0 = left of image, exclusive of right). */
     val cropLeft: Float = 0f,
-    /** Normalized crop top edge (0 = top of image). */
     val cropTop: Float = 0f,
-    /** Normalized crop right edge (1 = right of image). */
     val cropRight: Float = 1f,
-    /** Normalized crop bottom edge (1 = bottom of image). */
     val cropBottom: Float = 1f,
+    val filter: ImageFilter = ImageFilter.None,
 ) {
     init {
         require(scale > 0.0) { "scale must be > 0" }

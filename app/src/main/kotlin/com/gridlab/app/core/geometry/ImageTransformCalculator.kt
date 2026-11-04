@@ -1,5 +1,6 @@
 package com.gridlab.app.core.geometry
 
+import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ReferenceImage
 
 /**
@@ -37,6 +38,11 @@ object ImageTransformCalculator {
         image.copy(visible = visible)
 
     /** Sets rotation in degrees (normalized to 0..360). Does nothing when locked. */
+    fun withFilter(image: ReferenceImage, filter: ImageFilter): ReferenceImage {
+        if (image.locked) return image
+        return image.copy(filter = filter)
+    }
+
     fun withRotation(image: ReferenceImage, degrees: Float): ReferenceImage {
         if (image.locked) return image
         var d = degrees % 360f

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
+import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ReferenceImage
 import java.util.Locale
 
@@ -91,6 +92,58 @@ internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
                 label = { Text(text = stringResource(R.string.grid_secondary_divisions_value, n)) },
             )
         }
+    }
+}
+
+
+@Composable
+internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
+    Text(
+        text = stringResource(R.string.grid_labels_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = grid.labelsVisible,
+            onClick = { viewModel.setLabelsVisible(true) },
+            label = { Text(stringResource(R.string.grid_labels_on)) },
+        )
+        FilterChip(
+            selected = !grid.labelsVisible,
+            onClick = { viewModel.setLabelsVisible(false) },
+            label = { Text(stringResource(R.string.grid_labels_off)) },
+        )
+    }
+}
+
+@Composable
+internal fun ImageFilterSection(image: ReferenceImage, viewModel: GridConfigViewModel) {
+    Text(
+        text = stringResource(R.string.image_filter_title),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = image.filter == ImageFilter.None,
+            onClick = { viewModel.setImageFilter(ImageFilter.None) },
+            enabled = !image.locked,
+            label = { Text(stringResource(R.string.image_filter_none)) },
+        )
+        FilterChip(
+            selected = image.filter == ImageFilter.Grayscale,
+            onClick = { viewModel.setImageFilter(ImageFilter.Grayscale) },
+            enabled = !image.locked,
+            label = { Text(stringResource(R.string.image_filter_grayscale)) },
+        )
+        FilterChip(
+            selected = image.filter == ImageFilter.HighContrast,
+            onClick = { viewModel.setImageFilter(ImageFilter.HighContrast) },
+            enabled = !image.locked,
+            label = { Text(stringResource(R.string.image_filter_high_contrast)) },
+        )
     }
 }
 

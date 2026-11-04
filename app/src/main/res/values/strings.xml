@@ -105,4 +105,11 @@
     <string name="grid_secondary_off">Secondary off</string>
     <string name="grid_secondary_divisions_label">Subdivisions per cell</string>
     <string name="grid_secondary_divisions_value">%1$d</string>
+    <string name="grid_labels_title">Grid labels</string>
+    <string name="grid_labels_on">Labels on</string>
+    <string name="grid_labels_off">Labels off</string>
+    <string name="image_filter_title">Image filter</string>
+    <string name="image_filter_none">None</string>
+    <string name="image_filter_grayscale">Grayscale</string>
+    <string name="image_filter_high_contrast">High contrast</string>
 </resources>
