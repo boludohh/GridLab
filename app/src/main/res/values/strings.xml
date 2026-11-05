@@ -92,6 +92,8 @@
     <string name="projects_delete_multi_title">Delete projects?</string>
     <string name="projects_delete_multi_message">Do you want to delete %1$d projects?</string>
     <string name="projects_delete_mode_content_description">Delete projects</string>
+    <string name="projects_select_all">All</string>
+    <string name="projects_exit_selection_content_description">Exit selection mode</string>
     <string name="projects_cancel">Cancel</string>
     <string name="projects_back">Back to home</string>
     <string name="projects_id_hint">id: %1$s…</string>

@@ -84,9 +84,15 @@ fun MainScreen(
             enabled = !uiState.isWorking && !uiState.isSelectionMode,
             onClick = { viewModel.createProject(onOpenProject) },
         )
+        val allSelected = uiState.projects.isNotEmpty() &&
+            uiState.selectedIds.size == uiState.projects.size &&
+            uiState.projects.all { it.document.id in uiState.selectedIds }
         ProjectsSectionHeader(
             selectionMode = uiState.isSelectionMode,
+            allSelected = allSelected,
             enabled = !uiState.isWorking,
+            onCloseClick = { viewModel.exitSelectionMode() },
+            onSelectAllClick = { viewModel.toggleSelectAllProjects() },
             onDeleteClick = {
                 val shouldConfirm = viewModel.onDeleteHeaderClick()
                 if (shouldConfirm) {
@@ -338,7 +344,10 @@ private fun HomeNewProjectButton(
 @Composable
 private fun ProjectsSectionHeader(
     selectionMode: Boolean,
+    allSelected: Boolean,
     enabled: Boolean,
+    onCloseClick: () -> Unit,
+    onSelectAllClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -349,19 +358,58 @@ private fun ProjectsSectionHeader(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_photo_library_filled),
-            contentDescription = null,
-            tint = colors.iconActive,
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = stringResource(R.string.projects_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = colors.textPrimary,
-            modifier = Modifier.weight(1f),
-        )
+        if (selectionMode) {
+            IconButton(
+                onClick = onCloseClick,
+                enabled = enabled,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = stringResource(R.string.projects_exit_selection_content_description),
+                    tint = colors.iconActive,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .clickable(enabled = enabled, onClick = onSelectAllClick)
+                    .padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(
+                        if (allSelected) {
+                            R.drawable.ic_radio_button_checked
+                        } else {
+                            R.drawable.ic_radio_button_unchecked
+                        },
+                    ),
+                    contentDescription = null,
+                    tint = if (allSelected) colors.actionBg else colors.iconInactive,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.projects_select_all),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.textPrimary,
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+        } else {
+            Icon(
+                painter = painterResource(R.drawable.ic_photo_library_filled),
+                contentDescription = null,
+                tint = colors.iconActive,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.projects_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+        }
         IconButton(
             onClick = onDeleteClick,
             enabled = enabled,
@@ -464,7 +512,7 @@ private fun ProjectThumbnail(
             )
         } else {
             Icon(
-                painter = painterResource(R.drawable.ic_photo_library_filled),
+                painter = painterResource(R.drawable.ic_image_filled),
                 contentDescription = null,
                 tint = colors.iconInactive,
                 modifier = Modifier.size(22.dp),

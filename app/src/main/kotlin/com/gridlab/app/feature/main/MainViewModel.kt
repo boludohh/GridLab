@@ -145,6 +145,31 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Selects every listed project. No-op outside selection mode. */
+    fun selectAllProjects() {
+        _uiState.update { state ->
+            if (!state.isSelectionMode) return@update state
+            state.copy(selectedIds = state.projects.map { it.document.id }.toSet())
+        }
+    }
+
+    /**
+     * If all projects are selected, clears the selection; otherwise selects all.
+     * "All" radio is checked only when every project id is in [MainUiState.selectedIds].
+     */
+    fun toggleSelectAllProjects() {
+        _uiState.update { state ->
+            if (!state.isSelectionMode) return@update state
+            val allIds = state.projects.map { it.document.id }.toSet()
+            if (allIds.isEmpty()) return@update state
+            val allSelected = allIds.isNotEmpty() && state.selectedIds.containsAll(allIds)
+            state.copy(
+                selectedIds = if (allSelected) emptySet() else allIds,
+            )
+        }
+    }
+
+
     fun confirmDeleteSelected() {
         val ids = _uiState.value.selectedIds
         if (ids.isEmpty() || _uiState.value.isWorking) {
