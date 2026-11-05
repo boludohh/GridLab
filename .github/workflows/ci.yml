@@ -51,6 +51,9 @@ jobs:
       - name: Compile debug
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      - name: Compile release
+        run: ./gradlew :app:assembleRelease --stacktrace
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -59,12 +62,21 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 7
+          if-no-files-found: error
+
   quality:
     name: Tests and lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Quality failures (Detekt, unit tests) must not fail the overall workflow
-    # while the product is still iterating. Compile only remains the gate.
+    needs: compile
+    # Quality failures (Detekt, unit tests) must not fail the overall workflow.
+    # Compile only remains the gate: if compile is green the run stays green.
     continue-on-error: true
 
     steps:
