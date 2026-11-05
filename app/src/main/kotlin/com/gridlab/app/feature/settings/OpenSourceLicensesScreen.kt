@@ -31,10 +31,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gridlab.app.R
 import com.gridlab.app.ui.theme.GridLabTheme
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
+import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.markdownDimens
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -105,10 +108,52 @@ fun OpenSourceLicensesScreen(
             }
             else -> {
                 val scrollState = rememberScrollState()
+                val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
+                    color = colors.textPrimary,
+                    lineHeight = 20.sp,
+                )
+                val tableStyle = MaterialTheme.typography.bodySmall.copy(
+                    color = colors.textPrimary,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                )
+                val headerStyle = MaterialTheme.typography.titleMedium.copy(
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+
                 Markdown(
                     content = markdownText!!,
                     colors = markdownColor(
                         text = colors.textPrimary,
+                        codeBackground = colors.e1,
+                        inlineCodeBackground = colors.e2,
+                        dividerColor = colors.borderDecoE2,
+                        tableBackground = colors.surface,
+                    ),
+                    typography = markdownTypography(
+                        h1 = headerStyle.copy(fontSize = 22.sp),
+                        h2 = headerStyle.copy(fontSize = 18.sp),
+                        h3 = headerStyle.copy(fontSize = 16.sp),
+                        h4 = headerStyle.copy(fontSize = 15.sp),
+                        h5 = headerStyle.copy(fontSize = 14.sp),
+                        h6 = headerStyle.copy(fontSize = 13.sp),
+                        text = bodyStyle,
+                        paragraph = bodyStyle,
+                        ordered = bodyStyle,
+                        bullet = bodyStyle,
+                        list = bodyStyle,
+                        quote = bodyStyle.copy(color = colors.textSecondary),
+                        code = tableStyle.copy(fontFamily = MaterialTheme.typography.bodySmall.fontFamily),
+                        table = tableStyle,
+                    ),
+                    dimens = markdownDimens(
+                        // Wider cells so Maven coordinates / copyrights are readable
+                        // without aggressive truncation. Horizontal scroll still works.
+                        tableCellWidth = 220.dp,
+                        tableCellPadding = 10.dp,
+                        tableCornerSize = 8.dp,
+                        dividerThickness = 1.dp,
                     ),
                     modifier = Modifier
                         .fillMaxSize()

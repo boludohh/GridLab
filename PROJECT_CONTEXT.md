@@ -5,6 +5,7 @@
 - Settings screen reachable from the home settings icon
 - Open-source licenses block opens a Markdown view of `assets/licenses/third_party_licenses.md` (or `_es.md` when locale is Spanish)
 - multiplatform-markdown-renderer 0.46.0 + `-m3` for Material 3 themed Markdown
+- Table rendering tuned: wider cells (220dp), tighter padding, smaller table typography, semantic divider/table background colors so long Maven coordinates remain readable; horizontal scroll kept
 - Manual root navigation in MainActivity: Home → Settings → OpenSourceLicenses; Editor unchanged
 - Semantic colors used for surfaces, text, icons, and Markdown colors
 

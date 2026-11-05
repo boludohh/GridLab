@@ -7,7 +7,7 @@
 | Path | Purpose |
 |------|---------|
 | `feature/settings/SettingsScreen.kt` | Settings root screen; section list with Open-source licenses entry |
-| `feature/settings/OpenSourceLicensesScreen.kt` | Renders third-party licenses Markdown from assets via multiplatform-markdown-renderer |
+| `feature/settings/OpenSourceLicensesScreen.kt` | Renders third-party licenses Markdown from assets; tuned table denseness (cell width, padding, typography) for readable long coordinates |
 | `MainActivity.kt` | Root navigation coordinator (Home / Settings / OpenSourceLicenses / Editor) |
 | `feature/main/MainScreen.kt` | Home; settings icon opens Settings |
 | `res/drawable/ic_arrow_back.xml` | Back affordance for Settings / licenses screens |
