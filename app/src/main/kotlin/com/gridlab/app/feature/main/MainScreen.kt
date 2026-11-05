@@ -29,8 +29,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,12 +50,14 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.gridlab.app.R
-import com.gridlab.app.core.model.Document
 import com.gridlab.app.ui.theme.GridLabTheme
+import java.io.File
 import kotlinx.coroutines.delay
 
 private const val TAGLINE_INTERVAL_MS: Long = 2500L
@@ -68,8 +70,8 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val colors = GridLabTheme.colors
-    var renameTarget by remember { mutableStateOf<Document?>(null) }
-    var deleteTarget by remember { mutableStateOf<Document?>(null) }
+    var renameTarget by remember { mutableStateOf<ProjectRowUi?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -79,14 +81,18 @@ fun MainScreen(
         HomeTopBar()
         HomeHeroSection()
         HomeNewProjectButton(
-            enabled = !uiState.isWorking,
+            enabled = !uiState.isWorking && !uiState.isSelectionMode,
             onClick = { viewModel.createProject(onOpenProject) },
         )
-        Text(
-            text = stringResource(R.string.projects_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = colors.textPrimary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        ProjectsSectionHeader(
+            selectionMode = uiState.isSelectionMode,
+            enabled = !uiState.isWorking,
+            onDeleteClick = {
+                val shouldConfirm = viewModel.onDeleteHeaderClick()
+                if (shouldConfirm) {
+                    showDeleteConfirm = true
+                }
+            },
         )
         if (uiState.errorMessage != null) {
             Text(
@@ -131,13 +137,15 @@ fun MainScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.projects, key = { it.id }) { project ->
+                    items(uiState.projects, key = { it.document.id }) { row ->
                         ProjectRow(
-                            project = project,
+                            row = row,
+                            selectionMode = uiState.isSelectionMode,
+                            selected = row.document.id in uiState.selectedIds,
                             enabled = !uiState.isWorking,
-                            onOpen = { onOpenProject(project.id) },
-                            onRename = { renameTarget = project },
-                            onDelete = { deleteTarget = project },
+                            onOpen = { onOpenProject(row.document.id) },
+                            onToggleSelect = { viewModel.toggleProjectSelection(row.document.id) },
+                            onEdit = { renameTarget = row },
                         )
                     }
                 }
@@ -147,22 +155,26 @@ fun MainScreen(
 
     renameTarget?.let { target ->
         RenameDialog(
-            initialName = target.name,
+            initialName = target.document.name,
             onDismiss = { renameTarget = null },
             onConfirm = { newName ->
-                viewModel.renameProject(target.id, newName)
+                viewModel.renameProject(target.document.id, newName)
                 renameTarget = null
             },
         )
     }
 
-    deleteTarget?.let { target ->
-        DeleteDialog(
-            projectName = target.name,
-            onDismiss = { deleteTarget = null },
+    if (showDeleteConfirm) {
+        val count = uiState.selectedIds.size
+        DeleteProjectsDialog(
+            count = count,
+            onDismiss = {
+                showDeleteConfirm = false
+                viewModel.exitSelectionMode()
+            },
             onConfirm = {
-                viewModel.deleteProject(target.id)
-                deleteTarget = null
+                showDeleteConfirm = false
+                viewModel.confirmDeleteSelected()
             },
         )
     }
@@ -192,13 +204,12 @@ private fun HomeTopBar(modifier: Modifier = Modifier) {
             color = colors.textPrimary,
         )
         Spacer(modifier = Modifier.weight(1f))
-        // Visual only — settings navigation comes later (0.23)
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(colors.e2)
-                .clickable(onClick = { /* no-op for now */ }),
+                .clickable(onClick = { /* settings later */ }),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -325,42 +336,139 @@ private fun HomeNewProjectButton(
 }
 
 @Composable
-private fun ProjectRow(
-    project: Document,
+private fun ProjectsSectionHeader(
+    selectionMode: Boolean,
     enabled: Boolean,
-    onOpen: () -> Unit,
-    onRename: () -> Unit,
-    onDelete: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
-    Column(
-        modifier = Modifier
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_photo_library_filled),
+            contentDescription = null,
+            tint = colors.iconActive,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.projects_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(
+            onClick = onDeleteClick,
+            enabled = enabled,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_delete_filled),
+                contentDescription = stringResource(R.string.projects_delete_mode_content_description),
+                tint = if (selectionMode) colors.error else colors.iconActive,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProjectRow(
+    row: ProjectRowUi,
+    selectionMode: Boolean,
+    selected: Boolean,
+    enabled: Boolean,
+    onOpen: () -> Unit,
+    onToggleSelect: () -> Unit,
+    onEdit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = GridLabTheme.colors
+    Row(
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(colors.surface)
-            .clickable(enabled = enabled, onClick = onOpen)
-            .padding(12.dp),
+            .clickable(enabled = enabled) {
+                if (selectionMode) {
+                    onToggleSelect()
+                } else {
+                    onOpen()
+                }
+            }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        ProjectThumbnail(
+            absolutePath = row.thumbnailAbsolutePath,
+            modifier = Modifier.size(48.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = project.name,
+            text = row.document.name,
             style = MaterialTheme.typography.titleMedium,
             color = colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
-        Text(
-            text = stringResource(R.string.projects_id_hint, project.id.take(8)),
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.textSecondary,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 8.dp),
-        ) {
-            OutlinedButton(onClick = onRename, enabled = enabled) {
-                Text(text = stringResource(R.string.projects_rename))
+        if (selectionMode) {
+            Icon(
+                painter = painterResource(
+                    if (selected) {
+                        R.drawable.ic_radio_button_checked
+                    } else {
+                        R.drawable.ic_radio_button_unchecked
+                    },
+                ),
+                contentDescription = null,
+                tint = if (selected) colors.actionBg else colors.iconInactive,
+                modifier = Modifier.size(24.dp),
+            )
+        } else {
+            IconButton(
+                onClick = onEdit,
+                enabled = enabled,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_edit_filled),
+                    contentDescription = stringResource(R.string.projects_rename),
+                    tint = colors.iconActive,
+                )
             }
-            OutlinedButton(onClick = onDelete, enabled = enabled) {
-                Text(text = stringResource(R.string.projects_delete))
-            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectThumbnail(
+    absolutePath: String?,
+    modifier: Modifier = Modifier,
+) {
+    val colors = GridLabTheme.colors
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.e2),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (absolutePath != null) {
+            AsyncImage(
+                model = File(absolutePath),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Icon(
+                painter = painterResource(R.drawable.ic_photo_library_filled),
+                contentDescription = null,
+                tint = colors.iconInactive,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -400,16 +508,18 @@ private fun RenameDialog(
 }
 
 @Composable
-private fun DeleteDialog(
-    projectName: String,
+private fun DeleteProjectsDialog(
+    count: Int,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.projects_delete_title)) },
+        title = { Text(text = stringResource(R.string.projects_delete_multi_title)) },
         text = {
-            Text(text = stringResource(R.string.projects_delete_message, projectName))
+            Text(
+                text = stringResource(R.string.projects_delete_multi_message, count),
+            )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
