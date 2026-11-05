@@ -65,6 +65,7 @@ private const val TAGLINE_INTERVAL_MS: Long = 2500L
 @Composable
 fun MainScreen(
     onOpenProject: (documentId: String) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
@@ -78,7 +79,7 @@ fun MainScreen(
             .fillMaxSize()
             .background(colors.bg),
     ) {
-        HomeTopBar()
+        HomeTopBar(onSettingsClick = onOpenSettings)
         HomeHeroSection()
         HomeNewProjectButton(
             enabled = !uiState.isWorking && !uiState.isSelectionMode,
@@ -187,7 +188,10 @@ fun MainScreen(
 }
 
 @Composable
-private fun HomeTopBar(modifier: Modifier = Modifier) {
+private fun HomeTopBar(
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = GridLabTheme.colors
     Row(
         modifier = modifier
@@ -215,7 +219,7 @@ private fun HomeTopBar(modifier: Modifier = Modifier) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(colors.e2)
-                .clickable(onClick = { /* settings later */ }),
+                .clickable(onClick = onSettingsClick),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

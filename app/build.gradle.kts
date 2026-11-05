@@ -16,8 +16,8 @@ android {
         applicationId = "com.gridlab.app"
         minSdk = 27
         targetSdk = 37
-        versionCode = 22
-        versionName = "0.22.0"
+        versionCode = 23
+        versionName = "0.23.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +67,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.coil.compose)
+
+    implementation(libs.markdown.renderer)
+    implementation(libs.markdown.renderer.m3)
 
     detektPlugins(libs.detekt.formatting)
 

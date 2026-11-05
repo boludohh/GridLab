@@ -130,4 +130,8 @@
     <string name="image_filter_none">None</string>
     <string name="image_filter_grayscale">Grayscale</string>
     <string name="image_filter_high_contrast">High contrast</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back_content_description">Back</string>
+    <string name="settings_open_source_licenses">Open-source licenses</string>
+    <string name="settings_licenses_load_error">Could not load license text.</string>
 </resources>
