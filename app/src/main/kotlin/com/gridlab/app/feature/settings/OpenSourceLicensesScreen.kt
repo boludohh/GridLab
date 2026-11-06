@@ -127,6 +127,7 @@ fun OpenSourceLicensesScreen(
                     )
                 }
             }
+
             markdownText == null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -135,6 +136,7 @@ fun OpenSourceLicensesScreen(
                     CircularProgressIndicator(color = colors.iconActive)
                 }
             }
+
             else -> {
                 val scrollState = rememberScrollState()
                 val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -211,6 +213,7 @@ private fun LicensesTopBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -247,7 +250,8 @@ private fun LicensesTopBar(
 /**
  * GitHub-style table with auto-width columns and full grid separators.
  * Each column is sized to fit its longest cell content (no truncation).
- * Horizontal and vertical separator lines produce a hand-drawn table look.
+ * Cells are then re-measured to exactly fill their grid rectangle, so the
+ * vertical and horizontal separators form continuous straight lines.
  * The table scrolls horizontally if it exceeds the available width.
  */
 @Composable
@@ -323,8 +327,8 @@ private fun GithubStyleTable(
                 }
             },
             measurePolicy = { measurables, _ ->
-                // Measure every cell with unconstrained width so text never wraps.
-                val cellData = measurables.map { measurable ->
+                // Pass 1: measure every cell unconstrained to read its natural size.
+                val natural = measurables.map { measurable ->
                     val position = measurable.layoutId as TableCellPosition
                     val placeable = measurable.measure(
                         Constraints(
@@ -335,25 +339,39 @@ private fun GithubStyleTable(
                     Triple(position, placeable, measurable)
                 }
 
-                // Column width = widest cell in that column.
-                val numCols = (cellData.maxOfOrNull { it.first.column } ?: 0) + 1
+                // Column width = widest natural cell in that column.
+                val numCols = (natural.maxOfOrNull { it.first.column } ?: 0) + 1
                 val columnWidths = IntArray(numCols)
-                cellData.forEach { (pos, placeable, _) ->
+                natural.forEach { (pos, placeable, _) ->
                     columnWidths[pos.column] = maxOf(columnWidths[pos.column], placeable.width)
                 }
 
-                // Row height = tallest cell in that row.
+                // Row height = tallest natural cell in that row.
                 val numRows = rows.size
                 val rowHeights = IntArray(numRows)
-                cellData.forEach { (pos, placeable, _) ->
+                natural.forEach { (pos, placeable, _) ->
                     rowHeights[pos.row] = maxOf(rowHeights[pos.row], placeable.height)
+                }
+
+                // Pass 2: force every cell to fill its grid rectangle exactly, so
+                // separators drawn at cell edges line up into continuous straight lines.
+                val cells = natural.map { (pos, _, measurable) ->
+                    val placeable = measurable.measure(
+                        Constraints(
+                            minWidth = columnWidths[pos.column],
+                            maxWidth = columnWidths[pos.column],
+                            minHeight = rowHeights[pos.row],
+                            maxHeight = rowHeights[pos.row],
+                        ),
+                    )
+                    pos to placeable
                 }
 
                 val totalWidth = columnWidths.sum()
                 val totalHeight = rowHeights.sum()
 
                 layout(totalWidth, totalHeight) {
-                    cellData.forEach { (pos, placeable, _) ->
+                    cells.forEach { (pos, placeable) ->
                         val x = columnWidths.take(pos.column).sum()
                         val y = rowHeights.take(pos.row).sum()
                         placeable.placeRelative(x, y)
