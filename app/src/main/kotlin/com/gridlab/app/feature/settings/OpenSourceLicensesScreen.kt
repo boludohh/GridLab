@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RectangleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -32,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalContext
@@ -127,7 +127,6 @@ fun OpenSourceLicensesScreen(
                     )
                 }
             }
-
             markdownText == null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -136,7 +135,6 @@ fun OpenSourceLicensesScreen(
                     CircularProgressIndicator(color = colors.iconActive)
                 }
             }
-
             else -> {
                 val scrollState = rememberScrollState()
                 val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -213,7 +211,6 @@ private fun LicensesTopBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -249,7 +246,6 @@ private fun LicensesTopBar(
 
 /**
  * GitHub-style table with auto-width columns and full grid separators.
- *
  * Each column is sized to fit its longest cell content (no truncation).
  * Horizontal and vertical separator lines produce a hand-drawn table look.
  * The table scrolls horizontally if it exceeds the available width.
@@ -373,7 +369,6 @@ private data class TableCellPosition(val row: Int, val column: Int)
 
 /**
  * Extracts cell AST nodes from a GFM table node.
- *
  * Returns a list of rows; each row is a list of cell nodes.
  * The separator row (|---|---|) is excluded because it contains no CELL children.
  */
