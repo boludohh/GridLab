@@ -67,6 +67,10 @@
     <string name="crop_bottom">Bottom</string>
     <string name="crop_clear">Clear crop</string>
     <string name="crop_active">Crop active</string>
+    <string name="editor_tool_grid_content_description">Grid settings</string>
+    <string name="editor_tool_image_content_description">Image settings</string>
+    <string name="editor_tool_measure_content_description">Measurement tool</string>
+    <string name="editor_tool_export_content_description">Export options</string>
     <string name="home_banner_content_description">GridLab drawing grid example</string>
     <string name="home_tagline_subtitle">Turn your reference into a grid drawing.</string>
     <string name="home_settings_content_description">Settings</string>
@@ -103,7 +107,7 @@
     <string name="image_corrupt_message">Reference image file is corrupt or unreadable.</string>
     <string name="image_relink">Re-link image</string>
     <string name="image_remove_reference">Remove reference</string>
-    <string name="export_section_title">Export JPG</string>
+    <string name="export_section_title">Export</string>
     <string name="export_dpi_label">%1$d DPI</string>
     <string name="export_dpi_label_unsafe">%1$d DPI (high)</string>
     <string name="export_max_safe_dpi">Max safe DPI on this device: %1$d</string>

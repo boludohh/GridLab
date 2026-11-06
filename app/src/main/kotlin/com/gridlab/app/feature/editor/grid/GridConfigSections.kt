@@ -60,7 +60,6 @@ internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
     }
 }
 
-
 @Composable
 internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
     Text(
@@ -94,7 +93,6 @@ internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
         }
     }
 }
-
 
 @Composable
 internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
@@ -200,12 +198,20 @@ internal fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
     }
 }
 
+/**
+ * Manual save button with its status label. The [modifier] parameter lets the
+ * editor top bar render it compact instead of full width.
+ */
 @Composable
-internal fun GridSaveSection(uiState: GridConfigUiState, onSave: () -> Unit) {
+internal fun GridSaveSection(
+    uiState: GridConfigUiState,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+) {
     Button(
         onClick = onSave,
         enabled = !uiState.isSaving,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
         Text(
             text = when {
