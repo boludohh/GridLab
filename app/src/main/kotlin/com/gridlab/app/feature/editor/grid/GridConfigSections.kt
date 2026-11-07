@@ -3,18 +3,15 @@ package com.gridlab.app.feature.editor.grid
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
@@ -28,13 +25,13 @@ internal fun GridSizeSection(grid: Grid, viewModel: GridConfigViewModel) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        IntField(
+        EditorIntegerField(
             label = stringResource(R.string.grid_rows_label),
             value = grid.rows,
             onValueChange = viewModel::setRows,
             modifier = Modifier.weight(1f),
         )
-        IntField(
+        EditorIntegerField(
             label = stringResource(R.string.grid_columns_label),
             value = grid.columns,
             onValueChange = viewModel::setColumns,
@@ -299,24 +296,5 @@ private fun CropEdgeSlider(
         onValueChange = onValueChange,
         valueRange = if (valueRange.endInclusive > valueRange.start) valueRange else 0f..1f,
         enabled = enabled,
-    )
-}
-
-@Composable
-private fun IntField(
-    label: String,
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    OutlinedTextField(
-        value = value.toString(),
-        onValueChange = { text ->
-            text.toIntOrNull()?.let(onValueChange)
-        },
-        label = { Text(label) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier,
     )
 }
