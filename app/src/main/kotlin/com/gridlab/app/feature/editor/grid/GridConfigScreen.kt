@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,12 +83,10 @@ import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
+import kotlin.math.cos
+import kotlin.math.sin
 
-/**
- * Layout metrics for placing the reference image inside the paper preview.
- * Coordinates are relative to the paper top-left corner because the image
- * layer is clipped to the physical paper rectangle.
- */
+/** Layout metrics for placing the reference image inside the paper preview. */
 private data class ImageLayerLayout(
     val marginLeft: Float,
     val marginTop: Float,
@@ -550,6 +549,11 @@ private fun ReferenceImageLayer(
     val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
     val gesturesEnabled = !image.locked
+    // Latest transform values read at gesture time so a simultaneous pinch or a
+    // rotation change never uses stale compensation factors, without restarting
+    // the pointerInput detector mid-gesture.
+    val currentScale = rememberUpdatedState(userScale)
+    val currentRotation = rememberUpdatedState(image.rotationDegrees)
     val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
         ColorFilter.colorMatrix(ColorMatrix(coeffs))
     }
@@ -593,7 +597,20 @@ private fun ReferenceImageLayer(
                     Modifier.pointerInput(image.locked, layout.scale) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             if (pan != Offset.Zero) {
-                                onPan(pan.x * layout.mmPerPx, pan.y * layout.mmPerPx)
+                                // The pan arrives in the image's transformed space
+                                // (divided by userScale and rotated by -rotation because
+                                // this pointerInput lives inside the graphicsLayer). Map it
+                                // back to preview space so dragging feels 1:1 with the
+                                // finger at any scale and any rotation.
+                                val scale = currentScale.value
+                                val radians = Math.toRadians(currentRotation.value.toDouble())
+                                val cos = cos(radians).toFloat()
+                                val sin = sin(radians).toFloat()
+                                val scaledX = pan.x * scale
+                                val scaledY = pan.y * scale
+                                val previewX = scaledX * cos - scaledY * sin
+                                val previewY = scaledX * sin + scaledY * cos
+                                onPan(previewX * layout.mmPerPx, previewY * layout.mmPerPx)
                             }
                             if (zoom != 1f) {
                                 onScale(zoom.toDouble())
