@@ -17,7 +17,7 @@ import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ReferenceImage
-import com.gridlab.app.core.ui.ColorPickerField
+import com.gridlab.app.core.designsystem.component.ColorPickerField
 import java.util.Locale
 
 @Composable

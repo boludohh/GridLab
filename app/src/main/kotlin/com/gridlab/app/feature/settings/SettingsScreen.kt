@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 
 @Composable
 fun SettingsScreen(

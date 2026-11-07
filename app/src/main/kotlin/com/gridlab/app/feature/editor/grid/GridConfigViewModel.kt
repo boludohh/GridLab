@@ -9,14 +9,10 @@ import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.geometry.ExportSizeCalculator
 import com.gridlab.app.core.render.DocumentRenderer
 import com.gridlab.app.core.geometry.ImageTransformCalculator
-import com.gridlab.app.core.geometry.UnitConverter
-import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.ExportFormat
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.ImageFilter
-import com.gridlab.app.core.model.ImageAvailability
-import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.ReferenceImage
@@ -25,6 +21,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,45 +32,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
-
-data class GridConfigUiState(
-    val documentId: String = "",
-    val documentName: String = "Untitled",
-    val paper: Paper = Paper.defaultA4(),
-    val grid: Grid = Grid.default(),
-    val referenceImage: ReferenceImage? = null,
-    /** Absolute path for Coil; only set when [imageAvailability] is Present. */
-    val imageAbsolutePath: String? = null,
-    val imageAvailability: ImageAvailability = ImageAvailability.None,
-    val isLoading: Boolean = true,
-    val isSaving: Boolean = false,
-    val isImporting: Boolean = false,
-    val lastSaveSucceeded: Boolean? = null,
-    val importError: Boolean = false,
-    /** True when local edits are not yet persisted. */
-    val isDirty: Boolean = false,
-    /** When true, taps on the preview place measure points instead of transforming the image. */
-    val measureMode: Boolean = false,
-    /** First measure point in document mm (paper top-left origin), or null. */
-    val measurePoint1Mm: Pair<Double, Double>? = null,
-    /** Second measure point in document mm, or null. */
-    val measurePoint2Mm: Pair<Double, Double>? = null,
-    /** Packed ARGB for measure overlay (tool chrome; not part of the document). */
-    val measureColorArgb: Long = 0xFF1565C0,
-    val selectedExportDpi: Int = 150,
-    val maxSafeExportDpi: Int = 300,
-    val isExporting: Boolean = false,
-    val exportMessage: String? = null,
-    val lastExportPath: String? = null,
-)
-
-/** Distance in the paper's display unit, or null if both points are not set. */
-fun GridConfigUiState.measureDistanceDisplay(): Double? {
-    val p1 = measurePoint1Mm ?: return null
-    val p2 = measurePoint2Mm ?: return null
-    val mm = ViewportTransform.distanceMm(p1, p2)
-    return UnitConverter.fromMm(mm, paper.displayUnit)
-}
 
 @HiltViewModel
 @Suppress("TooManyFunctions")
@@ -87,11 +46,14 @@ class GridConfigViewModel @Inject constructor(
     val uiState: StateFlow<GridConfigUiState> = _uiState.asStateFlow()
 
     private var autosaveJob: Job? = null
+    private var documentLoadJob: Job? = null
+    private val saveMutex = Mutex()
 
     fun openDocument(documentId: String) {
         if (documentId.isBlank()) return
         autosaveJob?.cancel()
-        viewModelScope.launch {
+        documentLoadJob?.cancel()
+        documentLoadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, isDirty = false) }
             val existing = projectRepository.getDocument(documentId)
             if (existing != null) {
@@ -99,6 +61,7 @@ class GridConfigViewModel @Inject constructor(
             } else {
                 _uiState.update {
                     it.copy(
+                        documentId = documentId,
                         isLoading = false,
                         importError = false,
                         isDirty = false,
@@ -170,59 +133,92 @@ class GridConfigViewModel @Inject constructor(
      * so a re-link does not keep offsets that belonged to a different photo.
      */
     fun importImage(uri: Uri) {
-        val state = _uiState.value
-        if (state.documentId.isEmpty() || state.isImporting) return
+        val initialState = _uiState.value
+        if (initialState.documentId.isEmpty() || initialState.isImporting) return
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true, importError = false) }
+            var copiedPath: String? = null
             runCatching {
-                val previousPath = state.referenceImage?.relativePath
-                val relative = imageStorage.copyFromUri(state.documentId, uri)
-                if (previousPath != null && previousPath != relative) {
-                    imageStorage.deleteRelativeFile(previousPath)
+                copiedPath = imageStorage.copyFromUri(initialState.documentId, uri)
+                val current = _uiState.value
+                check(current.documentId == initialState.documentId) {
+                    "The active document changed while importing the image"
                 }
-                val ref = ReferenceImage.withPath(relative)
                 val updated = Document(
-                    id = state.documentId,
-                    name = state.documentName,
-                    paper = state.paper,
-                    grid = state.grid,
-                    referenceImage = ref,
+                    id = current.documentId,
+                    name = current.documentName,
+                    paper = current.paper,
+                    grid = current.grid,
+                    referenceImage = ReferenceImage.withPath(requireNotNull(copiedPath)),
                 )
-                projectRepository.saveDocument(updated)
-                applyDocument(updated)
+                saveMutex.withLock { projectRepository.saveDocument(updated) }
+                var editsRemain = false
+                _uiState.update { latest ->
+                    editsRemain = latest.documentId != updated.id ||
+                        latest.documentName != updated.name ||
+                        latest.paper != updated.paper ||
+                        latest.grid != updated.grid ||
+                        latest.referenceImage != current.referenceImage
+                    latest.copy(
+                        referenceImage = updated.referenceImage,
+                        imageAbsolutePath = imageStorage.resolveAbsoluteFile(requireNotNull(copiedPath)).absolutePath,
+                        imageAvailability = ImageAvailability.Present,
+                        isDirty = editsRemain,
+                        isImporting = false,
+                        importError = false,
+                    )
+                }
+                if (editsRemain) scheduleAutosave()
+                current.referenceImage?.relativePath?.takeIf { it != copiedPath }?.let { oldPath ->
+                    runCatching { imageStorage.deleteRelativeFile(oldPath) }
+                }
             }.onSuccess {
-                _uiState.update { it.copy(isImporting = false, isDirty = false) }
+                _uiState.update { it.copy(isImporting = false, importError = false) }
             }.onFailure {
+                copiedPath?.let { path -> imageStorage.deleteRelativeFile(path) }
                 _uiState.update { it.copy(isImporting = false, importError = true) }
             }
         }
     }
 
-    /**
-     * Removes the reference image from the document without changing paper or grid.
-     * Deletes the private file when present.
-     */
     fun removeReferenceImage() {
-        val state = _uiState.value
-        if (state.documentId.isEmpty() || state.referenceImage == null) return
+        val initialState = _uiState.value
+        if (initialState.documentId.isEmpty() || initialState.referenceImage == null) return
         viewModelScope.launch {
-            val path = state.referenceImage.relativePath
+            val pathToDelete = initialState.referenceImage.relativePath
             runCatching {
-                imageStorage.deleteRelativeFile(path)
+                val current = _uiState.value
+                check(current.documentId == initialState.documentId) {
+                    "The active document changed while removing the image"
+                }
                 val updated = Document(
-                    id = state.documentId,
-                    name = state.documentName,
-                    paper = state.paper,
-                    grid = state.grid,
+                    id = current.documentId,
+                    name = current.documentName,
+                    paper = current.paper,
+                    grid = current.grid,
                     referenceImage = null,
                 )
-                projectRepository.saveDocument(updated)
-                applyDocument(updated)
+                saveMutex.withLock { projectRepository.saveDocument(updated) }
+                var editsRemain = false
+                _uiState.update { latest ->
+                    editsRemain = latest.documentId != updated.id ||
+                        latest.documentName != updated.name ||
+                        latest.paper != updated.paper ||
+                        latest.grid != updated.grid ||
+                        latest.referenceImage != current.referenceImage
+                    latest.copy(
+                        referenceImage = null,
+                        imageAbsolutePath = null,
+                        imageAvailability = ImageAvailability.None,
+                        isDirty = editsRemain,
+                    )
+                }
+                if (editsRemain) scheduleAutosave()
+                runCatching { imageStorage.deleteRelativeFile(pathToDelete) }
             }
         }
     }
 
-    /** Manual save from UI; also cancels a pending debounced autosave. */
     fun saveDocument() {
         autosaveJob?.cancel()
         viewModelScope.launch { persistIfDirty(showStatus = true) }
@@ -246,35 +242,44 @@ class GridConfigViewModel @Inject constructor(
     }
 
     private suspend fun persistIfDirty(showStatus: Boolean) {
-        val state = _uiState.value
-        if (!state.isDirty || state.documentId.isEmpty()) return
-        if (showStatus) {
-            _uiState.update { it.copy(isSaving = true, lastSaveSucceeded = null) }
-        }
-        runCatching {
-            projectRepository.saveDocument(
-                Document(
-                    id = state.documentId,
-                    name = state.documentName,
-                    paper = state.paper,
-                    grid = state.grid,
-                    referenceImage = state.referenceImage,
-                ),
+        saveMutex.withLock {
+            val state = _uiState.value
+            if (!state.isDirty || state.documentId.isEmpty()) return@withLock
+            val documentToSave = Document(
+                id = state.documentId,
+                name = state.documentName,
+                paper = state.paper,
+                grid = state.grid,
+                referenceImage = state.referenceImage,
             )
-        }.onSuccess {
-            _uiState.update {
-                it.copy(
-                    isDirty = false,
-                    isSaving = false,
-                    lastSaveSucceeded = if (showStatus) true else it.lastSaveSucceeded,
-                )
+            if (showStatus) {
+                _uiState.update { it.copy(isSaving = true, lastSaveSucceeded = null) }
             }
-        }.onFailure {
-            _uiState.update {
-                it.copy(
-                    isSaving = false,
-                    lastSaveSucceeded = if (showStatus) false else it.lastSaveSucceeded,
-                )
+            runCatching {
+                projectRepository.saveDocument(documentToSave)
+            }.onSuccess {
+                var editsRemain = false
+                _uiState.update { current ->
+                    editsRemain = current.documentId != documentToSave.id ||
+                        current.documentName != documentToSave.name ||
+                        current.paper != documentToSave.paper ||
+                        current.grid != documentToSave.grid ||
+                        current.referenceImage != documentToSave.referenceImage
+                    current.copy(
+                        isDirty = editsRemain,
+                        isSaving = false,
+                        lastSaveSucceeded = if (showStatus) true else current.lastSaveSucceeded,
+                    )
+                }
+                if (editsRemain) scheduleAutosave()
+            }.onFailure {
+                _uiState.update { current ->
+                    current.copy(
+                        isDirty = true,
+                        isSaving = false,
+                        lastSaveSucceeded = if (showStatus) false else current.lastSaveSucceeded,
+                    )
+                }
             }
         }
     }

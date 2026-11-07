@@ -17,7 +17,7 @@ import com.gridlab.app.R
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
-import com.gridlab.app.core.ui.ColorPickerField
+import com.gridlab.app.core.designsystem.component.ColorPickerField
 import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.StandardPaperFormat
 

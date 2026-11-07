@@ -1,4 +1,4 @@
-package com.gridlab.app.core.ui
+package com.gridlab.app.core.designsystem.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
