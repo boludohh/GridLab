@@ -43,7 +43,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -575,26 +574,22 @@ private fun ReferenceImageLayer(
                 width = with(density) { layout.contentW.toDp() },
                 height = with(density) { layout.contentH.toDp() },
             )
-            .then(
-                if (image.hasCrop) {
-                    Modifier.clip(
-                        FractionalCropShape(
-                            left = image.cropLeft,
-                            top = image.cropTop,
-                            right = image.cropRight,
-                            bottom = image.cropBottom,
-                        ),
-                    )
-                } else {
-                    Modifier
-                },
-            )
             .graphicsLayer {
                 scaleX = userScale
                 scaleY = userScale
                 rotationZ = image.rotationDegrees
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
+                // Apply crop inside the graphicsLayer so it rotates with the image
+                if (image.hasCrop) {
+                    shape = FractionalCropShape(
+                        left = image.cropLeft,
+                        top = image.cropTop,
+                        right = image.cropRight,
+                        bottom = image.cropBottom,
+                    )
+                    clip = true
+                }
             }
             .then(
                 if (gesturesEnabled) {
