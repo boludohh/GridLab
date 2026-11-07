@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -82,10 +83,12 @@ import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
 
-/** Layout metrics for placing the reference image inside the paper preview. */
+/**
+ * Layout metrics for placing the reference image inside the paper preview.
+ * Coordinates are relative to the paper top-left corner because the image
+ * layer is clipped to the physical paper rectangle.
+ */
 private data class ImageLayerLayout(
-    val originX: Float,
-    val originY: Float,
     val marginLeft: Float,
     val marginTop: Float,
     val contentW: Float,
@@ -485,6 +488,10 @@ private fun PaperBackgroundCanvas(
     }
 }
 
+/**
+ * Draws the reference image clipped to the physical paper rectangle: content
+ * outside the sheet is not rendered, while the portion inside remains visible.
+ */
 @Composable
 private fun PreviewImageLayer(
     imagePath: String?,
@@ -496,26 +503,38 @@ private fun PreviewImageLayer(
 ) {
     val show = imagePath != null && referenceImage != null && referenceImage.visible
     if (!show) return
+    val density = LocalDensity.current
     val panHandler: (Double, Double) -> Unit =
         if (measureMode) { _, _ -> } else onPan
     val scaleHandler: (Double) -> Unit =
         if (measureMode) { _ -> } else onScale
-    ReferenceImageLayer(
-        imagePath = imagePath!!,
-        image = referenceImage!!,
-        layout = ImageLayerLayout(
-            originX = metrics.originX,
-            originY = metrics.originY,
-            marginLeft = metrics.marginLeft,
-            marginTop = metrics.marginTop,
-            contentW = metrics.contentW,
-            contentH = metrics.contentH,
-            scale = metrics.scale,
-            mmPerPx = metrics.mmPerPx,
-        ),
-        onPan = panHandler,
-        onScale = scaleHandler,
-    )
+    Box(
+        modifier = Modifier
+            .offset(
+                x = with(density) { metrics.originX.toDp() },
+                y = with(density) { metrics.originY.toDp() },
+            )
+            .size(
+                width = with(density) { metrics.paperW.toDp() },
+                height = with(density) { metrics.paperH.toDp() },
+            )
+            .clip(RectangleShape),
+    ) {
+        ReferenceImageLayer(
+            imagePath = imagePath!!,
+            image = referenceImage!!,
+            layout = ImageLayerLayout(
+                marginLeft = metrics.marginLeft,
+                marginTop = metrics.marginTop,
+                contentW = metrics.contentW,
+                contentH = metrics.contentH,
+                scale = metrics.scale,
+                mmPerPx = metrics.mmPerPx,
+            ),
+            onPan = panHandler,
+            onScale = scaleHandler,
+        )
+    }
 }
 
 @Composable
@@ -541,12 +560,8 @@ private fun ReferenceImageLayer(
         colorFilter = colorFilter,
         modifier = Modifier
             .offset(
-                x = with(density) {
-                    (layout.originX + layout.marginLeft + offsetXPx).toDp()
-                },
-                y = with(density) {
-                    (layout.originY + layout.marginTop + offsetYPx).toDp()
-                },
+                x = with(density) { (layout.marginLeft + offsetXPx).toDp() },
+                y = with(density) { (layout.marginTop + offsetYPx).toDp() },
             )
             .size(
                 width = with(density) { layout.contentW.toDp() },
