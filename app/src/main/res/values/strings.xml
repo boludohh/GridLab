@@ -67,6 +67,7 @@
     <string name="crop_bottom">Bottom</string>
     <string name="crop_clear">Clear crop</string>
     <string name="crop_active">Crop active</string>
+    <string name="editor_tool_paper_content_description">Paper settings</string>
     <string name="editor_tool_grid_content_description">Grid settings</string>
     <string name="editor_tool_image_content_description">Image settings</string>
     <string name="editor_tool_measure_content_description">Measurement tool</string>

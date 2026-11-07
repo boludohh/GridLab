@@ -16,8 +16,11 @@ import com.gridlab.app.core.model.ExportFormat
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ImageAvailability
+import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
+import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.ReferenceImage
+import com.gridlab.app.core.model.StandardPaperFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -274,6 +277,110 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
+    // --- Paper setters ------------------------------------------------------
+
+    fun setPaperFormat(format: StandardPaperFormat) {
+        if (_uiState.value.paper.format == format) return
+        updatePaper {
+            if (format == StandardPaperFormat.Custom) {
+                copy(format = format)
+            } else {
+                Paper.fromStandard(
+                    format = format,
+                    orientation = orientation,
+                    displayUnit = displayUnit,
+                    marginLeftMm = marginLeftMm,
+                    marginTopMm = marginTopMm,
+                    marginRightMm = marginRightMm,
+                    marginBottomMm = marginBottomMm,
+                )
+            }
+        }
+    }
+
+    fun setPaperOrientation(orientation: PaperOrientation) {
+        if (_uiState.value.paper.orientation == orientation) return
+        updatePaper {
+            if (format == StandardPaperFormat.Custom) {
+                copy(
+                    orientation = orientation,
+                    widthMm = heightMm,
+                    heightMm = widthMm,
+                )
+            } else {
+                Paper.fromStandard(
+                    format = format,
+                    orientation = orientation,
+                    displayUnit = displayUnit,
+                    marginLeftMm = marginLeftMm,
+                    marginTopMm = marginTopMm,
+                    marginRightMm = marginRightMm,
+                    marginBottomMm = marginBottomMm,
+                )
+            }
+        }
+    }
+
+    fun setDisplayUnit(unit: LengthUnit) {
+        if (_uiState.value.paper.displayUnit == unit) return
+        updatePaper { copy(displayUnit = unit) }
+    }
+
+    fun setCustomWidth(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(MIN_PAPER_DIMENSION_MM)
+        updatePaper { copy(format = StandardPaperFormat.Custom, widthMm = mm) }
+    }
+
+    fun setCustomHeight(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(MIN_PAPER_DIMENSION_MM)
+        updatePaper { copy(format = StandardPaperFormat.Custom, heightMm = mm) }
+    }
+
+    fun setMarginLeft(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(0.0)
+        updatePaper { copy(marginLeftMm = mm) }
+    }
+
+    fun setMarginTop(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(0.0)
+        updatePaper { copy(marginTopMm = mm) }
+    }
+
+    fun setMarginRight(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(0.0)
+        updatePaper { copy(marginRightMm = mm) }
+    }
+
+    fun setMarginBottom(displayValue: Double) {
+        val mm = displayToMm(displayValue, _uiState.value.paper.displayUnit)
+            .coerceAtLeast(0.0)
+        updatePaper { copy(marginBottomMm = mm) }
+    }
+
+    private fun displayToMm(displayValue: Double, unit: LengthUnit): Double = when (unit) {
+        LengthUnit.Millimeter -> displayValue
+        LengthUnit.Centimeter -> displayValue * 10.0
+        LengthUnit.Inch -> displayValue * 25.4
+    }
+
+    private fun updatePaper(transform: Paper.() -> Paper) {
+        _uiState.update { state ->
+            state.copy(
+                paper = state.paper.transform(),
+                lastSaveSucceeded = null,
+                isDirty = true,
+            )
+        }
+        scheduleAutosave()
+    }
+
+    // --- Grid setters -------------------------------------------------------
+
     fun setRows(rows: Int) {
         updateGrid { copy(rows = rows.coerceIn(1, MAX_DIVISIONS)) }
     }
@@ -310,6 +417,8 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(labelsVisible = visible) }
     }
 
+    // --- Image setters ------------------------------------------------------
+
     fun panImage(deltaXMm: Double, deltaYMm: Double) {
         updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
     }
@@ -342,6 +451,8 @@ class GridConfigViewModel @Inject constructor(
         updateImage { ImageTransformCalculator.withFilter(this, filter) }
     }
 
+    // --- Measure tool -------------------------------------------------------
+
     fun setMeasureMode(enabled: Boolean) {
         _uiState.update {
             it.copy(
@@ -371,6 +482,8 @@ class GridConfigViewModel @Inject constructor(
     fun clearMeasurePoints() {
         _uiState.update { it.copy(measurePoint1Mm = null, measurePoint2Mm = null) }
     }
+
+    // --- Crop ---------------------------------------------------------------
 
     fun setCrop(left: Float, top: Float, right: Float, bottom: Float) {
         updateImage { ImageTransformCalculator.withCrop(this, left, top, right, bottom) }
@@ -403,6 +516,7 @@ class GridConfigViewModel @Inject constructor(
         scheduleAutosave()
     }
 
+    // --- Export --------------------------------------------------------------
 
     fun setExportDpi(dpi: Int) {
         _uiState.update { it.copy(selectedExportDpi = dpi.coerceAtLeast(1), exportMessage = null) }
@@ -503,5 +617,6 @@ class GridConfigViewModel @Inject constructor(
         const val MAX_DIVISIONS: Int = 100
         const val MAX_SECONDARY_DIVISIONS: Int = 8
         const val AUTOSAVE_DEBOUNCE_MS: Long = 800L
+        const val MIN_PAPER_DIMENSION_MM: Double = 10.0
     }
 }

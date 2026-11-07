@@ -192,7 +192,7 @@ private fun GridConfigContent(
     modifier: Modifier = Modifier,
 ) {
     var activeTool by remember { mutableStateOf<EditorTool?>(null) }
-    var lastTool by remember { mutableStateOf(EditorTool.Grid) }
+    var lastTool by remember { mutableStateOf(EditorTool.Paper) }
     val interaction = PreviewInteraction(
         measureMode = uiState.measureMode,
         measurePoint1Mm = uiState.measurePoint1Mm,
@@ -318,6 +318,10 @@ private fun EditorPanelHost(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (tool) {
+                    EditorTool.Paper -> EditorPaperPanel(
+                        paper = uiState.paper,
+                        viewModel = viewModel,
+                    )
                     EditorTool.Grid -> EditorGridPanel(
                         grid = uiState.grid,
                         viewModel = viewModel,

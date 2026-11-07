@@ -23,6 +23,7 @@ import com.gridlab.app.R
 
 /** Tools available in the editor toolbar; each one opens its own bottom panel. */
 enum class EditorTool {
+    Paper,
     Grid,
     Image,
     Measure,
@@ -46,6 +47,13 @@ fun EditorToolbar(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        EditorToolButton(
+            tool = EditorTool.Paper,
+            iconRes = R.drawable.ic_article_filled,
+            contentDescription = stringResource(R.string.editor_tool_paper_content_description),
+            selected = selectedTool == EditorTool.Paper,
+            onClick = onToolClick,
+        )
         EditorToolButton(
             tool = EditorTool.Grid,
             iconRes = R.drawable.ic_grid_on_outline,
