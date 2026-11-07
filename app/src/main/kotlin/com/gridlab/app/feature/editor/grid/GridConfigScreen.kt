@@ -3,37 +3,43 @@ package com.gridlab.app.feature.editor.grid
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +59,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -70,13 +78,9 @@ import com.gridlab.app.core.geometry.GridLayout
 import com.gridlab.app.core.geometry.ImageFilterMatrices
 import com.gridlab.app.core.geometry.ViewportTransform
 import com.gridlab.app.core.model.Grid
-import com.gridlab.app.core.model.ImageAvailability
-import com.gridlab.app.core.model.ImageFilter
-import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
-import java.util.Locale
 
 /** Layout metrics for placing the reference image inside the paper preview. */
 private data class ImageLayerLayout(
@@ -174,6 +178,11 @@ fun GridConfigScreen(
     )
 }
 
+/**
+ * Editor shell: fixed top bar, always-visible paper preview, tool toolbar and
+ * a fixed-height bottom panel whose content scrolls internally. This keeps the
+ * preview on screen while the user adjusts any setting.
+ */
 @Composable
 private fun GridConfigContent(
     uiState: GridConfigUiState,
@@ -182,8 +191,8 @@ private fun GridConfigContent(
     onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val grid = uiState.grid
-    val paper = uiState.paper
+    var activeTool by remember { mutableStateOf<EditorTool?>(null) }
+    var lastTool by remember { mutableStateOf(EditorTool.Grid) }
     val interaction = PreviewInteraction(
         measureMode = uiState.measureMode,
         measurePoint1Mm = uiState.measurePoint1Mm,
@@ -193,424 +202,147 @@ private fun GridConfigContent(
         onMeasureTap = { x, y, vt -> viewModel.placeMeasurePoint(x, y, vt) },
     )
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.grid_config_title),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Text(
-            text = uiState.documentName,
-            style = MaterialTheme.typography.titleMedium,
-        )
-        OutlinedButton(
-            onClick = {
+    Column(modifier = modifier.fillMaxSize()) {
+        EditorTopBar(
+            documentName = uiState.documentName,
+            uiState = uiState,
+            onBack = {
                 viewModel.flushPendingSave()
                 onBack()
             },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = stringResource(R.string.projects_back))
-        }
-
+            onSave = viewModel::saveDocument,
+        )
         DocumentPreview(
-            paper = paper,
-            grid = grid,
+            paper = uiState.paper,
+            grid = uiState.grid,
             imagePath = uiState.imageAbsolutePath,
             referenceImage = uiState.referenceImage,
             interaction = interaction,
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(
-                    ratio = (paper.widthMm / paper.heightMm).toFloat().coerceIn(0.3f, 3f),
-                ),
+                .weight(1f)
+                .fillMaxWidth(),
         )
-
-        MeasureSection(uiState = uiState, viewModel = viewModel)
-
-        ImageImportSection(
-            availability = uiState.imageAvailability,
-            isImporting = uiState.isImporting,
-            importError = uiState.importError,
-            onImportClick = onImportClick,
-            onRemoveClick = { viewModel.removeReferenceImage() },
-        )
-
-        if (uiState.imageAvailability == ImageAvailability.Present &&
-            uiState.referenceImage != null
-        ) {
-            ImageTransformSection(
-                image = uiState.referenceImage,
-                viewModel = viewModel,
-            )
-            CropSection(
-                image = uiState.referenceImage,
-                viewModel = viewModel,
-            )
-            ImageFilterSection(
-                image = uiState.referenceImage,
-                viewModel = viewModel,
-            )
-        }
-
-        GridSizeSection(grid = grid, viewModel = viewModel)
-        GridVisibilitySection(grid = grid, viewModel = viewModel)
-        GridSecondarySection(grid = grid, viewModel = viewModel)
-        GridLabelsSection(grid = grid, viewModel = viewModel)
-        GridStrokeSection(grid = grid, viewModel = viewModel)
-        GridOpacitySection(grid = grid, viewModel = viewModel)
-        GridColorSection(grid = grid, viewModel = viewModel)
-        ExportSection(uiState = uiState, viewModel = viewModel)
-        GridSaveSection(uiState = uiState, onSave = viewModel::saveDocument)
-        
-        Spacer(modifier = Modifier.height(8.dp))
-    }
-}
-
-@Composable
-private fun MeasureSection(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
-) {
-    Text(
-        text = stringResource(R.string.measure_section_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = uiState.measureMode,
-            onClick = { viewModel.setMeasureMode(!uiState.measureMode) },
-            label = {
-                Text(
-                    text = if (uiState.measureMode) {
-                        stringResource(R.string.measure_mode_on)
-                    } else {
-                        stringResource(R.string.measure_mode_off)
-                    },
-                )
+        EditorToolbar(
+            selectedTool = activeTool,
+            onToolClick = { tool ->
+                lastTool = tool
+                activeTool = if (activeTool == tool) null else tool
             },
         )
-        if (uiState.measureMode) {
-            OutlinedButton(onClick = { viewModel.clearMeasurePoints() }) {
-                Text(text = stringResource(R.string.measure_clear))
-            }
-        }
-    }
-    if (uiState.measureMode) {
-        Text(
-            text = stringResource(R.string.measure_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        val distance = uiState.measureDistanceDisplay()
-        if (distance != null) {
-            val unitLabel = unitLabel(uiState.paper.displayUnit)
-            Text(
-                text = stringResource(
-                    R.string.measure_distance_value,
-                    String.format(Locale.US, "%.2f", distance),
-                    unitLabel,
-                ),
-                style = MaterialTheme.typography.titleMedium,
+        AnimatedVisibility(
+            visible = activeTool != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            EditorPanelHost(
+                tool = activeTool ?: lastTool,
+                uiState = uiState,
+                viewModel = viewModel,
+                onImportClick = onImportClick,
             )
         }
     }
 }
 
 @Composable
-private fun unitLabel(unit: LengthUnit): String =
-    when (unit) {
-        LengthUnit.Millimeter -> stringResource(R.string.unit_mm)
-        LengthUnit.Centimeter -> stringResource(R.string.unit_cm)
-        LengthUnit.Inch -> stringResource(R.string.unit_in)
-    }
-
-@Composable
-private fun ExportSection(
+private fun EditorTopBar(
+    documentName: String,
     uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = stringResource(R.string.export_section_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
-    Text(
-        text = stringResource(R.string.export_max_safe_dpi, uiState.maxSafeExportDpi),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    val colors = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        for (dpi in listOf(72, 100, 150, 200, 300)) {
-            val safe = dpi <= uiState.maxSafeExportDpi
-            FilterChip(
-                selected = uiState.selectedExportDpi == dpi,
-                onClick = { viewModel.setExportDpi(dpi) },
-                enabled = !uiState.isExporting,
-                label = {
-                    Text(
-                        text = if (safe) {
-                            stringResource(R.string.export_dpi_label, dpi)
-                        } else {
-                            stringResource(R.string.export_dpi_label_unsafe, dpi)
-                        },
-                    )
-                },
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(colors.surfaceVariant)
+                .clickable(onClick = onBack),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow_back),
+                contentDescription = stringResource(R.string.projects_back),
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
             )
         }
-    }
-    val exportEnabled = !uiState.isExporting && uiState.documentId.isNotEmpty()
-    if (uiState.isExporting) {
         Text(
-            text = stringResource(R.string.export_in_progress),
-            style = MaterialTheme.typography.bodyMedium,
+            text = documentName,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        GridSaveSection(
+            uiState = uiState,
+            onSave = onSave,
+            modifier = Modifier,
         )
     }
-    OutlinedButton(
-        onClick = { viewModel.exportJpeg() },
-        enabled = exportEnabled,
-        modifier = Modifier.fillMaxWidth(),
+}
+
+/**
+ * Fixed-height container for the active tool panel. Only its inner content
+ * scrolls, so the panel keeps its size and shape while the preview stays put.
+ */
+@Composable
+private fun EditorPanelHost(
+    tool: EditorTool,
+    uiState: GridConfigUiState,
+    viewModel: GridConfigViewModel,
+    onImportClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.45f)
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        Text(text = stringResource(R.string.export_action_jpg))
-    }
-    OutlinedButton(
-        onClick = { viewModel.exportPng() },
-        enabled = exportEnabled,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = stringResource(R.string.export_action_png))
-    }
-    OutlinedButton(
-        onClick = { viewModel.exportPdf() },
-        enabled = exportEnabled,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = stringResource(R.string.export_action_pdf))
-    }
-    when (uiState.exportMessage) {
-        "OK" -> {
-            Text(
-                text = stringResource(
-                    R.string.export_success,
-                    uiState.lastExportPath.orEmpty(),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        "DPI_TOO_HIGH" -> {
-            Text(
-                text = stringResource(
-                    R.string.export_dpi_too_high,
-                    uiState.selectedExportDpi,
-                    uiState.maxSafeExportDpi,
-                ),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            OutlinedButton(
-                onClick = {
-                    viewModel.setExportDpi(uiState.maxSafeExportDpi)
-                    viewModel.exportJpeg()
-                },
-                enabled = !uiState.isExporting,
-                modifier = Modifier.fillMaxWidth(),
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        key(tool) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = stringResource(
-                        R.string.export_use_safe_dpi,
-                        uiState.maxSafeExportDpi,
-                    ),
-                )
+                when (tool) {
+                    EditorTool.Grid -> EditorGridPanel(
+                        grid = uiState.grid,
+                        viewModel = viewModel,
+                    )
+                    EditorTool.Image -> EditorImagePanel(
+                        availability = uiState.imageAvailability,
+                        isImporting = uiState.isImporting,
+                        importError = uiState.importError,
+                        image = uiState.referenceImage,
+                        onImportClick = onImportClick,
+                        onRemoveClick = { viewModel.removeReferenceImage() },
+                        viewModel = viewModel,
+                    )
+                    EditorTool.Measure -> EditorMeasurePanel(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                    )
+                    EditorTool.Export -> EditorExportPanel(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                    )
+                }
             }
         }
-        "FAILED" -> {
-            Text(
-                text = stringResource(R.string.export_failed),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
     }
-}
-
-@Composable
-private fun ImageImportSection(
-    availability: ImageAvailability,
-    isImporting: Boolean,
-    importError: Boolean,
-    onImportClick: () -> Unit,
-    onRemoveClick: () -> Unit,
-) {
-    Text(text = stringResource(R.string.image_section_title), style = MaterialTheme.typography.titleMedium)
-    when (availability) {
-        ImageAvailability.Missing -> {
-            Text(
-                text = stringResource(R.string.image_missing_message),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        ImageAvailability.Corrupt -> {
-            Text(
-                text = stringResource(R.string.image_corrupt_message),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        else -> Unit
-    }
-    OutlinedButton(
-        onClick = onImportClick,
-        enabled = !isImporting,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(
-            text = when {
-                isImporting -> stringResource(R.string.image_importing)
-                availability == ImageAvailability.Present -> stringResource(R.string.image_replace)
-                availability == ImageAvailability.Missing ||
-                    availability == ImageAvailability.Corrupt -> stringResource(R.string.image_relink)
-                else -> stringResource(R.string.image_import)
-            },
-        )
-    }
-    if (availability != ImageAvailability.None) {
-        OutlinedButton(
-            onClick = onRemoveClick,
-            enabled = !isImporting,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = stringResource(R.string.image_remove_reference))
-        }
-    }
-    if (importError) {
-        Text(
-            text = stringResource(R.string.image_import_error),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-@Composable
-private fun ImageTransformSection(
-    image: ReferenceImage,
-    viewModel: GridConfigViewModel,
-) {
-    Text(
-        text = stringResource(R.string.image_transform_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
-    Text(
-        text = stringResource(R.string.image_transform_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    ImageVisibilityLockChips(image = image, viewModel = viewModel)
-    ImageOpacityControls(image = image, viewModel = viewModel)
-    ImageRotationControls(image = image, viewModel = viewModel)
-}
-
-@Composable
-private fun ImageVisibilityLockChips(
-    image: ReferenceImage,
-    viewModel: GridConfigViewModel,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = image.visible,
-            onClick = { viewModel.setImageVisible(!image.visible) },
-            label = {
-                Text(
-                    text = if (image.visible) {
-                        stringResource(R.string.image_visible_on)
-                    } else {
-                        stringResource(R.string.image_visible_off)
-                    },
-                )
-            },
-        )
-        FilterChip(
-            selected = image.locked,
-            onClick = { viewModel.setImageLocked(!image.locked) },
-            label = {
-                Text(
-                    text = if (image.locked) {
-                        stringResource(R.string.image_locked_on)
-                    } else {
-                        stringResource(R.string.image_locked_off)
-                    },
-                )
-            },
-        )
-    }
-}
-
-@Composable
-private fun ImageOpacityControls(
-    image: ReferenceImage,
-    viewModel: GridConfigViewModel,
-) {
-    Text(
-        text = stringResource(R.string.image_opacity_label),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    Slider(
-        value = image.opacity,
-        onValueChange = { viewModel.setImageOpacity(it) },
-        valueRange = 0.05f..1f,
-        enabled = !image.locked,
-    )
-    Text(
-        text = stringResource(R.string.image_opacity_value, (image.opacity * 100).toInt()),
-        style = MaterialTheme.typography.bodySmall,
-    )
-    OutlinedButton(
-        onClick = { viewModel.resetImageTransform() },
-        enabled = !image.locked,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = stringResource(R.string.image_reset_transform))
-    }
-}
-
-@Composable
-private fun ImageRotationControls(
-    image: ReferenceImage,
-    viewModel: GridConfigViewModel,
-) {
-    Text(
-        text = stringResource(R.string.image_rotation_label),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    Slider(
-        value = image.rotationDegrees,
-        onValueChange = { viewModel.setImageRotation(it) },
-        valueRange = 0f..360f,
-        enabled = !image.locked,
-    )
-    Text(
-        text = stringResource(
-            R.string.image_rotation_value,
-            String.format(Locale.US, "%.0f", image.rotationDegrees),
-        ),
-        style = MaterialTheme.typography.bodySmall,
-    )
 }
 
 @Composable
@@ -637,7 +369,6 @@ private fun DocumentPreview(
             originYPx = metrics.originY,
             scale = metrics.scale,
         )
-
         PaperBackgroundCanvas(
             metrics = metrics,
             paperColor = paperColor,
@@ -646,7 +377,6 @@ private fun DocumentPreview(
             onMeasureTap = interaction.onMeasureTap,
             viewport = viewport,
         )
-
         PreviewImageLayer(
             imagePath = imagePath,
             referenceImage = referenceImage,
@@ -655,7 +385,6 @@ private fun DocumentPreview(
             onPan = interaction.onPan,
             onScale = interaction.onScale,
         )
-
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (grid.visible) {
                 drawGridLines(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
@@ -763,12 +492,10 @@ private fun PreviewImageLayer(
 ) {
     val show = imagePath != null && referenceImage != null && referenceImage.visible
     if (!show) return
-
     val panHandler: (Double, Double) -> Unit =
         if (measureMode) { _, _ -> } else onPan
     val scaleHandler: (Double) -> Unit =
         if (measureMode) { _ -> } else onScale
-
     ReferenceImageLayer(
         imagePath = imagePath!!,
         image = referenceImage!!,
@@ -800,11 +527,9 @@ private fun ReferenceImageLayer(
     val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
     val gesturesEnabled = !image.locked
-
     val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
         ColorFilter.colorMatrix(ColorMatrix(coeffs))
     }
-
     AsyncImage(
         model = File(imagePath),
         contentDescription = stringResource(R.string.image_content_description),
@@ -898,14 +623,12 @@ private fun DrawScope.drawGridLabels(
     val cellW = (layout.cellWidthMm * scale).toFloat()
     val cellH = (layout.cellHeightMm * scale).toFloat()
     val textSizePx = (2.5f * scale).coerceIn(10f, 36f)
-
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.BLACK
         textSize = textSizePx
         typeface = android.graphics.Typeface.DEFAULT_BOLD
         textAlign = android.graphics.Paint.Align.CENTER
     }
-
     drawContext.canvas.nativeCanvas.apply {
         for (c in 0 until grid.columns) {
             val x = contentOriginX + cellW * (c + 0.5f)
@@ -941,7 +664,6 @@ private fun DrawScope.drawGridLines(
     val strokePx = (grid.lineStyle.strokeWidthMm * scale).toFloat().coerceAtLeast(1f)
     val contentH = (layout.printableHeightMm * scale).toFloat()
     val contentW = (layout.printableWidthMm * scale).toFloat()
-
     for (xMm in layout.verticalLineXsMm) {
         val x = contentOriginX + (xMm * scale).toFloat()
         drawLine(lineColor, Offset(x, contentOriginY), Offset(x, contentOriginY + contentH), strokePx)
@@ -950,12 +672,10 @@ private fun DrawScope.drawGridLines(
         val y = contentOriginY + (yMm * scale).toFloat()
         drawLine(lineColor, Offset(contentOriginX, y), Offset(contentOriginX + contentW, y), strokePx)
     }
-
     if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
         val secondaryColor = Color(grid.secondaryLineStyle.colorArgb.toInt())
             .copy(alpha = grid.secondaryLineStyle.opacity)
         val secondaryStroke = (grid.secondaryLineStyle.strokeWidthMm * scale).toFloat().coerceAtLeast(0.5f)
-
         for (xMm in layout.secondaryVerticalXsMm) {
             val x = contentOriginX + (xMm * scale).toFloat()
             drawLine(
