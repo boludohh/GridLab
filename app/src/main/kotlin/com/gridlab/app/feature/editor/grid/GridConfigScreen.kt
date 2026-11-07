@@ -530,6 +530,7 @@ private fun PreviewImageLayer(
                 scale = metrics.scale,
                 mmPerPx = metrics.mmPerPx,
             ),
+            measureMode = measureMode,
             onPan = panHandler,
             onScale = scaleHandler,
         )
@@ -541,6 +542,7 @@ private fun ReferenceImageLayer(
     imagePath: String,
     image: ReferenceImage,
     layout: ImageLayerLayout,
+    measureMode: Boolean,
     onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
     onScale: (factor: Double) -> Unit,
 ) {
@@ -548,7 +550,9 @@ private fun ReferenceImageLayer(
     val userScale = image.scale.toFloat()
     val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
-    val gesturesEnabled = !image.locked
+    // Disable transform gestures when the image is locked OR when measure mode is active,
+    // so taps pass through to the paper's measure point detector.
+    val gesturesEnabled = !image.locked && !measureMode
     // Latest transform values read at gesture time so a simultaneous pinch or a
     // rotation change never uses stale compensation factors, without restarting
     // the pointerInput detector mid-gesture.
@@ -594,7 +598,7 @@ private fun ReferenceImageLayer(
             }
             .then(
                 if (gesturesEnabled) {
-                    Modifier.pointerInput(image.locked, layout.scale) {
+                    Modifier.pointerInput(image.locked, layout.scale, measureMode) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             if (pan != Offset.Zero) {
                                 // The pan arrives in the image's transformed space
