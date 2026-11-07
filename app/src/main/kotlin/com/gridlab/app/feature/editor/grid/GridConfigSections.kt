@@ -17,6 +17,7 @@ import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ReferenceImage
+import com.gridlab.app.core.ui.ColorPickerField
 import java.util.Locale
 
 @Composable
@@ -109,6 +110,13 @@ internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
             label = { Text(stringResource(R.string.grid_labels_off)) },
         )
     }
+    if (grid.labelsVisible) {
+        ColorPickerField(
+            label = stringResource(R.string.grid_label_color_label),
+            colorArgb = grid.labelColorArgb,
+            onColorChange = viewModel::setLabelColorArgb,
+        )
+    }
 }
 
 @Composable
@@ -175,24 +183,20 @@ internal fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
 
 @Composable
 internal fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_color_label), style = MaterialTheme.typography.titleMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF000000,
-            onClick = { viewModel.setColorArgb(0xFF000000) },
-            label = { Text(stringResource(R.string.grid_color_black)) },
-        )
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF808080,
-            onClick = { viewModel.setColorArgb(0xFF808080) },
-            label = { Text(stringResource(R.string.grid_color_gray)) },
-        )
-        FilterChip(
-            selected = grid.lineStyle.colorArgb == 0xFF1565C0,
-            onClick = { viewModel.setColorArgb(0xFF1565C0) },
-            label = { Text(stringResource(R.string.grid_color_blue)) },
-        )
-    }
+    ColorPickerField(
+        label = stringResource(R.string.grid_color_label),
+        colorArgb = grid.lineStyle.colorArgb,
+        onColorChange = viewModel::setColorArgb,
+    )
+}
+
+@Composable
+internal fun GridSecondaryColorSection(grid: Grid, viewModel: GridConfigViewModel) {
+    ColorPickerField(
+        label = stringResource(R.string.grid_secondary_color_label),
+        colorArgb = grid.secondaryLineStyle.colorArgb,
+        onColorChange = viewModel::setSecondaryColorArgb,
+    )
 }
 
 /**

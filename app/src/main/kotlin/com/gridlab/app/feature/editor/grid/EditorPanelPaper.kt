@@ -17,6 +17,7 @@ import com.gridlab.app.R
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
+import com.gridlab.app.core.ui.ColorPickerField
 import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.StandardPaperFormat
 
@@ -34,6 +35,11 @@ internal fun EditorPaperPanel(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        ColorPickerField(
+            label = stringResource(R.string.paper_color_label),
+            colorArgb = paper.colorArgb,
+            onColorChange = viewModel::setPaperColorArgb,
+        )
         Text(
             text = stringResource(R.string.paper_config_title),
             style = MaterialTheme.typography.titleMedium,

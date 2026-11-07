@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * [labelsVisible] draws column numbers (1..N) along the top and row letters
  * (A, B, …) along the left edge of the printable area.
+ * [labelColorArgb] is the packed ARGB color used for those labels.
  */
 @Serializable
 data class Grid(
@@ -22,6 +23,7 @@ data class Grid(
         opacity = 0.45f,
     ),
     val labelsVisible: Boolean = false,
+    val labelColorArgb: Long = DEFAULT_LABEL_COLOR_ARGB,
 ) {
     init {
         require(rows >= 1) { "rows must be >= 1" }
@@ -33,6 +35,7 @@ data class Grid(
         const val DEFAULT_ROWS: Int = 10
         const val DEFAULT_COLUMNS: Int = 10
         const val DEFAULT_SECONDARY_DIVISIONS: Int = 2
+        const val DEFAULT_LABEL_COLOR_ARGB: Long = 0xFF000000
 
         fun default(): Grid = Grid()
     }

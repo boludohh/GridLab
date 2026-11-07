@@ -42,7 +42,7 @@ class DocumentRenderer @Inject constructor() {
         val heightPx = ExportSizeCalculator.heightPx(paper.heightMm, dpi)
         val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.RGB_565)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
+        canvas.drawColor(document.paper.colorArgb.toInt())
 
         val pxPerMm = dpi / ExportSizeCalculator.MM_PER_INCH
         val marginLeft = (paper.marginLeftMm * pxPerMm).toFloat()
@@ -287,7 +287,7 @@ class DocumentRenderer @Inject constructor() {
     ) {
         val layout = GridCalculator.calculate(document.paper, document.grid)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
+            color = document.grid.labelColorArgb.toInt()
             textSize = (2.5 * pxPerMm).toFloat().coerceIn(8f, 48f)
             typeface = Typeface.DEFAULT_BOLD
             textAlign = Paint.Align.CENTER

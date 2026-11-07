@@ -220,6 +220,7 @@ private fun GridConfigContent(
             imagePath = uiState.imageAbsolutePath,
             referenceImage = uiState.referenceImage,
             interaction = interaction,
+            measureColor = Color(uiState.measureColorArgb.toInt()),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
@@ -358,13 +359,13 @@ private fun DocumentPreview(
     imagePath: String?,
     referenceImage: ReferenceImage?,
     interaction: PreviewInteraction,
+    measureColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val layout = remember(paper, grid) { GridCalculator.calculate(paper, grid) }
-    val paperColor = MaterialTheme.colorScheme.surface
+    val paperColor = Color(paper.colorArgb.toInt())
     val borderColor = MaterialTheme.colorScheme.outline
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-    val measureColor = MaterialTheme.colorScheme.primary
 
     BoxWithConstraints(
         modifier = modifier.background(surfaceVariant).padding(8.dp),
@@ -660,7 +661,7 @@ private fun DrawScope.drawGridLabels(
     val cellH = (layout.cellHeightMm * scale).toFloat()
     val textSizePx = (2.5f * scale).coerceIn(10f, 36f)
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.BLACK
+        color = grid.labelColorArgb.toInt()
         textSize = textSizePx
         typeface = android.graphics.Typeface.DEFAULT_BOLD
         textAlign = android.graphics.Paint.Align.CENTER

@@ -57,6 +57,8 @@ data class GridConfigUiState(
     val measurePoint1Mm: Pair<Double, Double>? = null,
     /** Second measure point in document mm, or null. */
     val measurePoint2Mm: Pair<Double, Double>? = null,
+    /** Packed ARGB for measure overlay (tool chrome; not part of the document). */
+    val measureColorArgb: Long = 0xFF1565C0,
     val selectedExportDpi: Int = 150,
     val maxSafeExportDpi: Int = 300,
     val isExporting: Boolean = false,
@@ -293,6 +295,7 @@ class GridConfigViewModel @Inject constructor(
                     marginTopMm = marginTopMm,
                     marginRightMm = marginRightMm,
                     marginBottomMm = marginBottomMm,
+                    colorArgb = colorArgb,
                 )
             }
         }
@@ -316,9 +319,11 @@ class GridConfigViewModel @Inject constructor(
                     marginTopMm = marginTopMm,
                     marginRightMm = marginRightMm,
                     marginBottomMm = marginBottomMm,
+                    colorArgb = colorArgb,
                 )
             }
         }
+
     }
 
     fun setDisplayUnit(unit: LengthUnit) {
@@ -403,6 +408,22 @@ class GridConfigViewModel @Inject constructor(
 
     fun setColorArgb(colorArgb: Long) {
         updateGrid { copy(lineStyle = lineStyle.copy(colorArgb = colorArgb)) }
+    }
+
+    fun setSecondaryColorArgb(colorArgb: Long) {
+        updateGrid { copy(secondaryLineStyle = secondaryLineStyle.copy(colorArgb = colorArgb)) }
+    }
+
+    fun setLabelColorArgb(colorArgb: Long) {
+        updateGrid { copy(labelColorArgb = colorArgb) }
+    }
+
+    fun setPaperColorArgb(colorArgb: Long) {
+        updatePaper { copy(colorArgb = colorArgb) }
+    }
+
+    fun setMeasureColorArgb(colorArgb: Long) {
+        _uiState.update { it.copy(measureColorArgb = colorArgb) }
     }
 
     fun setSecondaryDivisions(divisions: Int) {

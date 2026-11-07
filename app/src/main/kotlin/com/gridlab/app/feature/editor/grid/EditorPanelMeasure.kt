@@ -3,20 +3,19 @@ package com.gridlab.app.feature.editor.grid
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
+import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.LengthUnit
-import java.util.Locale
+import com.gridlab.app.core.ui.ColorPickerField
 
-/** Bottom panel with the distance measurement tool. */
+/** Bottom panel for the measure tool (mode toggle, distance readout, color). */
 @Composable
 internal fun EditorMeasurePanel(
     uiState: GridConfigUiState,
@@ -31,55 +30,51 @@ internal fun EditorMeasurePanel(
             text = stringResource(R.string.measure_section_title),
             style = MaterialTheme.typography.titleMedium,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = uiState.measureMode,
-                onClick = { viewModel.setMeasureMode(!uiState.measureMode) },
-                label = {
-                    Text(
-                        text = if (uiState.measureMode) {
-                            stringResource(R.string.measure_mode_on)
-                        } else {
-                            stringResource(R.string.measure_mode_off)
-                        },
-                    )
-                },
+                onClick = { viewModel.setMeasureMode(true) },
+                label = { Text(stringResource(R.string.measure_mode_on)) },
             )
-            if (uiState.measureMode) {
-                OutlinedButton(onClick = { viewModel.clearMeasurePoints() }) {
-                    Text(text = stringResource(R.string.measure_clear))
-                }
-            }
+            FilterChip(
+                selected = !uiState.measureMode,
+                onClick = { viewModel.setMeasureMode(false) },
+                label = { Text(stringResource(R.string.measure_mode_off)) },
+            )
         }
-        if (uiState.measureMode) {
+        ColorPickerField(
+            label = stringResource(R.string.measure_color_label),
+            colorArgb = uiState.measureColorArgb,
+            onColorChange = viewModel::setMeasureColorArgb,
+        )
+        val distance = uiState.measureDistanceDisplay()
+        if (distance != null) {
+            val unitLabel = when (uiState.paper.displayUnit) {
+                LengthUnit.Millimeter -> stringResource(R.string.unit_mm)
+                LengthUnit.Centimeter -> stringResource(R.string.unit_cm)
+                LengthUnit.Inch -> stringResource(R.string.unit_in)
+            }
+            Text(
+                text = stringResource(
+                    R.string.measure_distance_value,
+                    formatDecimalForDisplay(distance),
+                    unitLabel,
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        } else {
             Text(
                 text = stringResource(R.string.measure_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            val distance = uiState.measureDistanceDisplay()
-            if (distance != null) {
-                val unitLabel = unitLabel(uiState.paper.displayUnit)
-                Text(
-                    text = stringResource(
-                        R.string.measure_distance_value,
-                        String.format(Locale.US, "%.2f", distance),
-                        unitLabel,
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+        }
+        if (uiState.measurePoint1Mm != null || uiState.measurePoint2Mm != null) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = viewModel::clearMeasurePoints,
+            ) {
+                Text(stringResource(R.string.measure_clear))
             }
         }
     }
 }
-
-@Composable
-private fun unitLabel(unit: LengthUnit): String =
-    when (unit) {
-        LengthUnit.Millimeter -> stringResource(R.string.unit_mm)
-        LengthUnit.Centimeter -> stringResource(R.string.unit_cm)
-        LengthUnit.Inch -> stringResource(R.string.unit_in)
-    }

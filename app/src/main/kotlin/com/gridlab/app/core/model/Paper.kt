@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * All linear values are stored in millimeters (internal unit).
  * [displayUnit] only affects how values are shown or edited in the UI.
+ * [colorArgb] is the paper fill color (packed ARGB); default is opaque white.
  */
 @Serializable
 data class Paper(
@@ -19,6 +20,7 @@ data class Paper(
     val marginRightMm: Double = 0.0,
     val marginBottomMm: Double = 0.0,
     val displayUnit: LengthUnit = LengthUnit.Millimeter,
+    val colorArgb: Long = DEFAULT_COLOR_ARGB,
 ) {
     val printableWidthMm: Double
         get() = (widthMm - marginLeftMm - marginRightMm).coerceAtLeast(0.0)
@@ -27,6 +29,8 @@ data class Paper(
         get() = (heightMm - marginTopMm - marginBottomMm).coerceAtLeast(0.0)
 
     companion object {
+        const val DEFAULT_COLOR_ARGB: Long = 0xFFFFFFFF
+
         fun fromStandard(
             format: StandardPaperFormat,
             orientation: PaperOrientation = PaperOrientation.Portrait,
@@ -35,6 +39,7 @@ data class Paper(
             marginTopMm: Double = 0.0,
             marginRightMm: Double = 0.0,
             marginBottomMm: Double = 0.0,
+            colorArgb: Long = DEFAULT_COLOR_ARGB,
         ): Paper {
             require(format != StandardPaperFormat.Custom) {
                 "Use the primary constructor for Custom paper"
@@ -55,6 +60,7 @@ data class Paper(
                 marginRightMm = marginRightMm,
                 marginBottomMm = marginBottomMm,
                 displayUnit = displayUnit,
+                colorArgb = colorArgb,
             )
         }
 

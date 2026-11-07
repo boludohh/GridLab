@@ -1,20 +1,24 @@
 # GridLab — Project Context
 
-## Current version: 0.23.0 — Settings + open-source licenses
+## Current version: 0.24.0 — Custom HSV color picker
 
-- Settings screen reachable from the home settings icon
-- Open-source licenses block opens a Markdown view of `assets/licenses/third_party_licenses.md` (or `_es.md` when locale is Spanish)
-- multiplatform-markdown-renderer 0.46.0 + `-m3` for Material 3 themed Markdown
-- Table rendering tuned: wider cells (220dp), tighter padding, smaller table typography, semantic divider/table background colors so long Maven coordinates remain readable; horizontal scroll kept
-- Manual root navigation in MainActivity: Home → Settings → OpenSourceLicenses; Editor unchanged
-- Semantic colors used for surfaces, text, icons, and Markdown colors
+- Shared HSV color picker in `core/ui/HsvColorPicker.kt` (square + hue bar + dialog field)
+- User-selectable colors for:
+  - Paper fill
+  - Primary grid lines
+  - Secondary grid lines
+  - Grid labels
+  - Measure overlay (session tool color)
+- Paper.colorArgb and Grid.labelColorArgb persisted with the document (serialization defaults keep old docs loading)
+- Preview and DocumentRenderer respect paper / label / grid colors
+- Editor shell (toolbar + bottom panels) from 0.23 unchanged in structure
 
-- MainScreen + MainViewModel (home)
-- Banner, rotating EN taglines (2.5s), full-width New project with icon
-- Project list CRUD on home
-- Editor + JPG/PNG/PDF export unchanged
-- Edge-to-edge (API 27–37) via configureEdgeToEdge + system bar icon appearance by theme mode
+## Previous (0.23.0)
+
+- Settings + open-source licenses Markdown
+- multiplatform-markdown-renderer 0.46.0 + m3
+- CI: compile debug+release artifacts; quality gated on compile with continue-on-error
 
 ## Deferred
 
-0.24 storage, Detekt cleanup, values-es for UI strings.
+Storage info, Detekt cleanup, values-es for UI strings, full semantic-color migration in editor chrome.
