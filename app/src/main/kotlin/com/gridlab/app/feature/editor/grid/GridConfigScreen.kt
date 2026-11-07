@@ -86,8 +86,18 @@ import java.io.File
 import kotlin.math.cos
 import kotlin.math.sin
 
+/** Layout metrics for placing the reference image inside the paper preview. */
+private data class ImageLayerLayout(
+    val marginLeft: Float,
+    val marginTop: Float,
+    val contentW: Float,
+    val contentH: Float,
+    val scale: Float,
+    val mmPerPx: Double,
+)
+
 /** Measure state + interaction callbacks for the paper preview (keeps DocumentPreview ≤ 8 params). */
-internal data class PreviewInteraction(
+private data class PreviewInteraction(
     val measureMode: Boolean,
     val measurePoint1Mm: Pair<Double, Double>?,
     val measurePoint2Mm: Pair<Double, Double>?,
@@ -95,6 +105,29 @@ internal data class PreviewInteraction(
     val onScale: (factor: Double) -> Unit,
     val onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
 )
+
+/** Clips to a normalized crop rect (0..1) of the layout bounds. */
+private class FractionalCropShape(
+    private val left: Float,
+    private val top: Float,
+    private val right: Float,
+    private val bottom: Float,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        return Outline.Rectangle(
+            Rect(
+                left = size.width * left,
+                top = size.height * top,
+                right = size.width * right,
+                bottom = size.height * bottom,
+            ),
+        )
+    }
+}
 
 @Composable
 fun GridConfigScreen(
@@ -319,3 +352,384 @@ private fun EditorPanelHost(
     }
 }
 
+@Composable
+private fun DocumentPreview(
+    paper: Paper,
+    grid: Grid,
+    imagePath: String?,
+    referenceImage: ReferenceImage?,
+    interaction: PreviewInteraction,
+    measureColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val layout = remember(paper, grid) { GridCalculator.calculate(paper, grid) }
+    val paperColor = Color(paper.colorArgb.toInt())
+    val borderColor = MaterialTheme.colorScheme.outline
+    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+
+    BoxWithConstraints(
+        modifier = modifier.background(surfaceVariant).padding(8.dp),
+    ) {
+        val metrics = rememberPreviewMetrics(paper, layout, constraints.maxWidth, constraints.maxHeight)
+        val viewport = ViewportTransform(
+            originXPx = metrics.originX,
+            originYPx = metrics.originY,
+            scale = metrics.scale,
+        )
+        PaperBackgroundCanvas(
+            metrics = metrics,
+            paperColor = paperColor,
+            borderColor = borderColor,
+            measureMode = interaction.measureMode,
+            onMeasureTap = interaction.onMeasureTap,
+            viewport = viewport,
+        )
+        PreviewImageLayer(
+            imagePath = imagePath,
+            referenceImage = referenceImage,
+            metrics = metrics,
+            measureMode = interaction.measureMode,
+            onPan = interaction.onPan,
+            onScale = interaction.onScale,
+        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            if (grid.visible) {
+                drawGridLines(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
+                if (grid.labelsVisible) {
+                    drawGridLabels(layout, grid, metrics.originX, metrics.originY, metrics.scale, paper)
+                }
+            }
+            drawMeasureOverlay(
+                viewport,
+                interaction.measurePoint1Mm,
+                interaction.measurePoint2Mm,
+                measureColor,
+            )
+        }
+    }
+}
+
+private data class PreviewMetrics(
+    val originX: Float,
+    val originY: Float,
+    val marginLeft: Float,
+    val marginTop: Float,
+    val contentW: Float,
+    val contentH: Float,
+    val scale: Float,
+    val mmPerPx: Double,
+    val paperW: Float,
+    val paperH: Float,
+)
+
+@Composable
+private fun rememberPreviewMetrics(
+    paper: Paper,
+    layout: GridLayout,
+    maxWInt: Int,
+    maxHInt: Int,
+): PreviewMetrics {
+    val maxW = maxWInt.toFloat()
+    val maxH = maxHInt.toFloat()
+    val scale = minOf(maxW / paper.widthMm.toFloat(), maxH / paper.heightMm.toFloat())
+    val paperW = paper.widthMm.toFloat() * scale
+    val paperH = paper.heightMm.toFloat() * scale
+    val originX = (maxW - paperW) / 2f
+    val originY = (maxH - paperH) / 2f
+    return PreviewMetrics(
+        originX = originX,
+        originY = originY,
+        marginLeft = paper.marginLeftMm.toFloat() * scale,
+        marginTop = paper.marginTopMm.toFloat() * scale,
+        contentW = layout.printableWidthMm.toFloat() * scale,
+        contentH = layout.printableHeightMm.toFloat() * scale,
+        scale = scale,
+        mmPerPx = if (scale > 0f) 1.0 / scale.toDouble() else 1.0,
+        paperW = paperW,
+        paperH = paperH,
+    )
+}
+
+@Composable
+private fun PaperBackgroundCanvas(
+    metrics: PreviewMetrics,
+    paperColor: Color,
+    borderColor: Color,
+    measureMode: Boolean,
+    onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
+    viewport: ViewportTransform,
+) {
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(
+                if (measureMode) {
+                    Modifier.pointerInput(measureMode) {
+                        detectTapGestures { offset ->
+                            onMeasureTap(offset.x, offset.y, viewport)
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
+        drawRect(
+            color = paperColor,
+            topLeft = Offset(metrics.originX, metrics.originY),
+            size = Size(metrics.paperW, metrics.paperH),
+        )
+        drawRect(
+            color = borderColor,
+            topLeft = Offset(metrics.originX, metrics.originY),
+            size = Size(metrics.paperW, metrics.paperH),
+            style = Stroke(width = 2f),
+        )
+    }
+}
+
+/**
+ * Draws the reference image clipped to the physical paper rectangle: content
+ * outside the sheet is not rendered, while the portion inside remains visible.
+ */
+@Composable
+private fun PreviewImageLayer(
+    imagePath: String?,
+    referenceImage: ReferenceImage?,
+    metrics: PreviewMetrics,
+    measureMode: Boolean,
+    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    onScale: (factor: Double) -> Unit,
+) {
+    val show = imagePath != null && referenceImage != null && referenceImage.visible
+    if (!show) return
+    val density = LocalDensity.current
+    val panHandler: (Double, Double) -> Unit =
+        if (measureMode) { _, _ -> } else onPan
+    val scaleHandler: (Double) -> Unit =
+        if (measureMode) { _ -> } else onScale
+    Box(
+        modifier = Modifier
+            .offset(
+                x = with(density) { metrics.originX.toDp() },
+                y = with(density) { metrics.originY.toDp() },
+            )
+            .size(
+                width = with(density) { metrics.paperW.toDp() },
+                height = with(density) { metrics.paperH.toDp() },
+            )
+            .clip(RectangleShape),
+    ) {
+        ReferenceImageLayer(
+            imagePath = imagePath!!,
+            image = referenceImage!!,
+            layout = ImageLayerLayout(
+                marginLeft = metrics.marginLeft,
+                marginTop = metrics.marginTop,
+                contentW = metrics.contentW,
+                contentH = metrics.contentH,
+                scale = metrics.scale,
+                mmPerPx = metrics.mmPerPx,
+            ),
+            measureMode = measureMode,
+            onPan = panHandler,
+            onScale = scaleHandler,
+        )
+    }
+}
+
+@Composable
+private fun ReferenceImageLayer(
+    imagePath: String,
+    image: ReferenceImage,
+    layout: ImageLayerLayout,
+    measureMode: Boolean,
+    onPan: (deltaXMm: Double, deltaYMm: Double) -> Unit,
+    onScale: (factor: Double) -> Unit,
+) {
+    val density = LocalDensity.current
+    val userScale = image.scale.toFloat()
+    val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
+    val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
+    // Disable transform gestures when the image is locked OR when measure mode is active,
+    // so taps pass through to the paper's measure point detector.
+    val gesturesEnabled = !image.locked && !measureMode
+    // Latest transform values read at gesture time so a simultaneous pinch or a
+    // rotation change never uses stale compensation factors, without restarting
+    // the pointerInput detector mid-gesture.
+    val currentScale = rememberUpdatedState(userScale)
+    val currentRotation = rememberUpdatedState(image.rotationDegrees)
+    val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
+        ColorFilter.colorMatrix(ColorMatrix(coeffs))
+    }
+    AsyncImage(
+        model = File(imagePath),
+        contentDescription = stringResource(R.string.image_content_description),
+        contentScale = ContentScale.Fit,
+        colorFilter = colorFilter,
+        modifier = Modifier
+            .offset(
+                x = with(density) { (layout.marginLeft + offsetXPx).toDp() },
+                y = with(density) { (layout.marginTop + offsetYPx).toDp() },
+            )
+            .size(
+                width = with(density) { layout.contentW.toDp() },
+                height = with(density) { layout.contentH.toDp() },
+            )
+            .graphicsLayer {
+                scaleX = userScale
+                scaleY = userScale
+                rotationZ = image.rotationDegrees
+                alpha = image.opacity
+                transformOrigin = TransformOrigin.Center
+                // Apply crop inside the graphicsLayer so it rotates with the image
+                if (image.hasCrop) {
+                    shape = FractionalCropShape(
+                        left = image.cropLeft,
+                        top = image.cropTop,
+                        right = image.cropRight,
+                        bottom = image.cropBottom,
+                    )
+                    clip = true
+                }
+            }
+            .then(
+                if (gesturesEnabled) {
+                    Modifier.pointerInput(image.locked, layout.scale, measureMode) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            if (pan != Offset.Zero) {
+                                // The pan arrives in the image's transformed space
+                                // (divided by userScale and rotated by -rotation because
+                                // this pointerInput lives inside the graphicsLayer). Map it
+                                // back to preview space so dragging feels 1:1 with the
+                                // finger at any scale and any rotation.
+                                val scale = currentScale.value
+                                val radians = Math.toRadians(currentRotation.value.toDouble())
+                                val cos = cos(radians).toFloat()
+                                val sin = sin(radians).toFloat()
+                                val scaledX = pan.x * scale
+                                val scaledY = pan.y * scale
+                                val previewX = scaledX * cos - scaledY * sin
+                                val previewY = scaledX * sin + scaledY * cos
+                                onPan(previewX * layout.mmPerPx, previewY * layout.mmPerPx)
+                            }
+                            if (zoom != 1f) {
+                                onScale(zoom.toDouble())
+                            }
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+    )
+}
+
+private fun DrawScope.drawMeasureOverlay(
+    viewport: ViewportTransform,
+    p1: Pair<Double, Double>?,
+    p2: Pair<Double, Double>?,
+    color: Color,
+) {
+    val radius = 8f
+    if (p1 != null) {
+        val (x, y) = viewport.documentToScreenPx(p1.first, p1.second)
+        drawCircle(color = color, radius = radius, center = Offset(x, y))
+    }
+    if (p2 != null) {
+        val (x, y) = viewport.documentToScreenPx(p2.first, p2.second)
+        drawCircle(color = color, radius = radius, center = Offset(x, y))
+    }
+    if (p1 != null && p2 != null) {
+        val (x1, y1) = viewport.documentToScreenPx(p1.first, p1.second)
+        val (x2, y2) = viewport.documentToScreenPx(p2.first, p2.second)
+        drawLine(color = color, start = Offset(x1, y1), end = Offset(x2, y2), strokeWidth = 3f)
+    }
+}
+
+private fun DrawScope.drawGridLabels(
+    layout: GridLayout,
+    grid: Grid,
+    originX: Float,
+    originY: Float,
+    scale: Float,
+    paper: Paper,
+) {
+    val contentOriginX = originX + paper.marginLeftMm.toFloat() * scale
+    val contentOriginY = originY + paper.marginTopMm.toFloat() * scale
+    val cellW = (layout.cellWidthMm * scale).toFloat()
+    val cellH = (layout.cellHeightMm * scale).toFloat()
+    val textSizePx = (2.5f * scale).coerceIn(10f, 36f)
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = grid.labelColorArgb.toInt()
+        textSize = textSizePx
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+    drawContext.canvas.nativeCanvas.apply {
+        for (c in 0 until grid.columns) {
+            val x = contentOriginX + cellW * (c + 0.5f)
+            val y = (contentOriginY - 4f).coerceAtLeast(textSizePx)
+            drawText(GridLabelFormatter.columnLabel(c), x, y, paint)
+        }
+        paint.textAlign = android.graphics.Paint.Align.RIGHT
+        for (r in 0 until grid.rows) {
+            val y = contentOriginY + cellH * (r + 0.5f) + textSizePx * 0.35f
+            val x = contentOriginX - 4f
+            if (x > 8f) {
+                drawText(GridLabelFormatter.rowLabel(r), x, y, paint)
+            } else {
+                paint.textAlign = android.graphics.Paint.Align.LEFT
+                drawText(GridLabelFormatter.rowLabel(r), contentOriginX + 4f, y, paint)
+                paint.textAlign = android.graphics.Paint.Align.RIGHT
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawGridLines(
+    layout: GridLayout,
+    grid: Grid,
+    originX: Float,
+    originY: Float,
+    scale: Float,
+    paper: Paper,
+) {
+    val contentOriginX = originX + paper.marginLeftMm.toFloat() * scale
+    val contentOriginY = originY + paper.marginTopMm.toFloat() * scale
+    val lineColor = Color(grid.lineStyle.colorArgb.toInt()).copy(alpha = grid.lineStyle.opacity)
+    val strokePx = (grid.lineStyle.strokeWidthMm * scale).toFloat().coerceAtLeast(1f)
+    val contentH = (layout.printableHeightMm * scale).toFloat()
+    val contentW = (layout.printableWidthMm * scale).toFloat()
+    for (xMm in layout.verticalLineXsMm) {
+        val x = contentOriginX + (xMm * scale).toFloat()
+        drawLine(lineColor, Offset(x, contentOriginY), Offset(x, contentOriginY + contentH), strokePx)
+    }
+    for (yMm in layout.horizontalLineYsMm) {
+        val y = contentOriginY + (yMm * scale).toFloat()
+        drawLine(lineColor, Offset(contentOriginX, y), Offset(contentOriginX + contentW, y), strokePx)
+    }
+    if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
+        val secondaryColor = Color(grid.secondaryLineStyle.colorArgb.toInt())
+            .copy(alpha = grid.secondaryLineStyle.opacity)
+        val secondaryStroke = (grid.secondaryLineStyle.strokeWidthMm * scale).toFloat().coerceAtLeast(0.5f)
+        for (xMm in layout.secondaryVerticalXsMm) {
+            val x = contentOriginX + (xMm * scale).toFloat()
+            drawLine(
+                secondaryColor,
+                Offset(x, contentOriginY),
+                Offset(x, contentOriginY + contentH),
+                secondaryStroke,
+            )
+        }
+        for (yMm in layout.secondaryHorizontalYsMm) {
+            val y = contentOriginY + (yMm * scale).toFloat()
+            drawLine(
+                secondaryColor,
+                Offset(contentOriginX, y),
+                Offset(contentOriginX + contentW, y),
+                secondaryStroke,
+            )
+        }
+    }
+}

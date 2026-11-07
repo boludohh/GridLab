@@ -56,7 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.gridlab.app.R
-import com.gridlab.app.core.designsystem.theme.GridLabTheme
+import com.gridlab.app.ui.theme.GridLabTheme
 import java.io.File
 import kotlinx.coroutines.delay
 
@@ -101,9 +101,9 @@ fun MainScreen(
                 }
             },
         )
-        uiState.errorMessage?.let { errorMessage ->
+        if (uiState.errorMessage != null) {
             Text(
-                text = errorMessage,
+                text = uiState.errorMessage!!,
                 color = colors.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),

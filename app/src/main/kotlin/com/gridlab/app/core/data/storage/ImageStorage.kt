@@ -27,9 +27,8 @@ class ImageStorage @Inject constructor(
      */
     suspend fun copyFromUri(documentId: String, uri: Uri): String = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "projects/" + documentId).apply { mkdirs() }
-        val extension = fileExtensionFor(uri)
-        val fileName = "original_${UUID.randomUUID()}.$extension"
-        val dest = File(dir, fileName)
+        val extension = guessExtension(uri)
+        val dest = File(dir, "original_" + extension)
         context.contentResolver.openInputStream(uri)?.use { input ->
             dest.outputStream().use { output -> input.copyTo(output) }
         } ?: throw IOException("Cannot open image uri: " + uri)
@@ -76,13 +75,13 @@ class ImageStorage @Inject constructor(
         }
     }
 
-    private fun fileExtensionFor(uri: Uri): String {
-        val type = context.contentResolver.getType(uri)?.substringBefore(';')
+    private fun guessExtension(uri: Uri): String {
+        val type = context.contentResolver.getType(uri) ?: return UUID.randomUUID().toString() + ".jpg"
         return when (type) {
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            "image/jpeg", "image/jpg" -> "jpg"
-            else -> "jpg"
+            "image/png" -> UUID.randomUUID().toString() + ".png"
+            "image/webp" -> UUID.randomUUID().toString() + ".webp"
+            "image/jpeg", "image/jpg" -> UUID.randomUUID().toString() + ".jpg"
+            else -> UUID.randomUUID().toString() + ".jpg"
         }
     }
 }

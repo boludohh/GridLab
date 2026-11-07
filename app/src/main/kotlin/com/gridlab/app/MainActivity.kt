@@ -16,7 +16,7 @@ import com.gridlab.app.feature.main.MainScreen
 import com.gridlab.app.feature.settings.OpenSourceLicensesScreen
 import com.gridlab.app.feature.settings.SettingsScreen
 import com.gridlab.app.ui.configureEdgeToEdge
-import com.gridlab.app.core.designsystem.theme.GridLabTheme
+import com.gridlab.app.ui.theme.GridLabTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 /**

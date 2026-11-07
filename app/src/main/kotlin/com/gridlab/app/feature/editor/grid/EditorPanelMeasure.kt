@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.LengthUnit
-import com.gridlab.app.core.designsystem.component.ColorPickerField
+import com.gridlab.app.core.ui.ColorPickerField
 
 /** Bottom panel for the measure tool (mode toggle, distance readout, color). */
 @Composable

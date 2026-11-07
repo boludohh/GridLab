@@ -1,4 +1,4 @@
-package com.gridlab.app.core.designsystem.theme
+package com.gridlab.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

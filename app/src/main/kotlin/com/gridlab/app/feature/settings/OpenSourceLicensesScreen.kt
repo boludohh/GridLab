@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gridlab.app.R
-import com.gridlab.app.core.designsystem.theme.GridLabTheme
+import com.gridlab.app.ui.theme.GridLabTheme
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownTableBasicText
 import com.mikepenz.markdown.m3.Markdown
@@ -138,7 +138,6 @@ fun OpenSourceLicensesScreen(
             }
 
             else -> {
-                val loadedMarkdown = requireNotNull(markdownText)
                 val scrollState = rememberScrollState()
                 val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
                     color = colors.textPrimary,
@@ -155,7 +154,7 @@ fun OpenSourceLicensesScreen(
                 )
 
                 Markdown(
-                    content = loadedMarkdown,
+                    content = markdownText!!,
                     colors = markdownColor(
                         text = colors.textPrimary,
                         codeBackground = colors.e1,

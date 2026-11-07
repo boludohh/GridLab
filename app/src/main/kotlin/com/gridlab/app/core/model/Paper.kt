@@ -44,12 +44,8 @@ data class Paper(
             require(format != StandardPaperFormat.Custom) {
                 "Use the primary constructor for Custom paper"
             }
-            val w = requireNotNull(format.portraitWidthMm) {
-                "Standard paper format must define a portrait width"
-            }
-            val h = requireNotNull(format.portraitHeightMm) {
-                "Standard paper format must define a portrait height"
-            }
+            val w = format.portraitWidthMm!!
+            val h = format.portraitHeightMm!!
             val (width, height) = when (orientation) {
                 PaperOrientation.Portrait -> w to h
                 PaperOrientation.Landscape -> h to w
