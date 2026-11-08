@@ -1,5 +1,6 @@
 package com.gridlab.app.core.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,9 +39,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
+import com.gridlab.app.ui.theme.GridLabTheme
 import android.graphics.Color as AndroidColor
 
 /**
@@ -267,9 +271,11 @@ fun ColorPickerField(
     colorArgb: Long,
     onColorChange: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    @DrawableRes iconRes: Int? = null,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var draft by remember(colorArgb) { mutableStateOf(colorArgb) }
+    val colors = GridLabTheme.colors
 
     Row(
         modifier = modifier
@@ -280,11 +286,20 @@ fun ColorPickerField(
             }
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        if (iconRes != null) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = colors.iconActive,
+                modifier = Modifier.size(20.dp),
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
+            color = colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
         Box(
