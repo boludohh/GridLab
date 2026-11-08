@@ -43,7 +43,6 @@ internal fun GridSizeSection(grid: Grid, viewModel: GridConfigViewModel) {
 
 @Composable
 internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_visibility_label), style = MaterialTheme.typography.titleMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.visible,
@@ -60,10 +59,6 @@ internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
 
 @Composable
 internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(
-        text = stringResource(R.string.grid_secondary_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.secondaryVisible,
@@ -94,10 +89,6 @@ internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
 
 @Composable
 internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(
-        text = stringResource(R.string.grid_labels_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.labelsVisible,
@@ -115,6 +106,7 @@ internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
             label = stringResource(R.string.grid_label_color_label),
             colorArgb = grid.labelColorArgb,
             onColorChange = viewModel::setLabelColorArgb,
+            iconRes = R.drawable.ic_palette_filled,
         )
     }
 }
@@ -152,7 +144,6 @@ internal fun ImageFilterSection(image: ReferenceImage, viewModel: GridConfigView
 
 @Composable
 internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_stroke_label), style = MaterialTheme.typography.titleMedium)
     Slider(
         value = grid.lineStyle.strokeWidthMm.toFloat(),
         onValueChange = { viewModel.setStrokeWidthMm(it.toDouble()) },
@@ -169,7 +160,6 @@ internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
 
 @Composable
 internal fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.grid_opacity_label), style = MaterialTheme.typography.titleMedium)
     Slider(
         value = grid.lineStyle.opacity,
         onValueChange = viewModel::setOpacity,
@@ -187,6 +177,7 @@ internal fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
         label = stringResource(R.string.grid_color_label),
         colorArgb = grid.lineStyle.colorArgb,
         onColorChange = viewModel::setColorArgb,
+        iconRes = R.drawable.ic_palette_filled,
     )
 }
 
@@ -196,6 +187,7 @@ internal fun GridSecondaryColorSection(grid: Grid, viewModel: GridConfigViewMode
         label = stringResource(R.string.grid_secondary_color_label),
         colorArgb = grid.secondaryLineStyle.colorArgb,
         onColorChange = viewModel::setSecondaryColorArgb,
+        iconRes = R.drawable.ic_palette_filled,
     )
 }
 

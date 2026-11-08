@@ -25,6 +25,10 @@
     <string name="paper_save_success">Saved</string>
     <string name="paper_save_error">Could not save</string>
     <string name="grid_config_title">Grid</string>
+    <string name="grid_size_section_label">Size</string>
+    <string name="grid_stroke_section_label">Stroke</string>
+    <string name="grid_secondary_section_label">Secondary</string>
+    <string name="grid_labels_section_label">Labels</string>
     <string name="grid_rows_label">Rows</string>
     <string name="grid_columns_label">Columns</string>
     <string name="grid_visibility_label">Visibility</string>
@@ -34,7 +38,7 @@
     <string name="grid_stroke_value">%1$s mm</string>
     <string name="grid_opacity_label">Opacity</string>
     <string name="grid_opacity_value">%1$d%%</string>
-    <string name="grid_color_label">Line color</string>
+    <string name="grid_color_label">Color</string>
     <string name="grid_color_black">Black</string>
     <string name="grid_color_gray">Gray</string>
     <string name="grid_color_blue">Blue</string>
@@ -146,8 +150,8 @@
     <string name="settings_licenses_load_error">Could not load license text.</string>
 
     <string name="paper_color_label">Color</string>
-    <string name="grid_secondary_color_label">Secondary line color</string>
-    <string name="grid_label_color_label">Label color</string>
+    <string name="grid_secondary_color_label">Color</string>
+    <string name="grid_label_color_label">Color</string>
     <string name="measure_color_label">Measure color</string>
     <string name="color_picker_apply">Apply</string>
     <string name="color_picker_cancel">Cancel</string>
