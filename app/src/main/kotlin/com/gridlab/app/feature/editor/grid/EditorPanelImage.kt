@@ -296,7 +296,7 @@ private fun ImageCropSection(
         Text(
             text = stringResource(R.string.crop_active),
             style = MaterialTheme.typography.bodyMedium,
-            color = colors.primary,
+            color = colors.actionBg,
         )
     }
     CropEdgeSlider(
