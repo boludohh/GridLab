@@ -4,8 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
@@ -80,6 +82,10 @@ private fun hsvToColor(h: Float, s: Float, v: Float): Color {
 
 /**
  * Interactive HSV picker. Reports every intermediate change via [onColorChange].
+ *
+ * Internal HSV state is initialized once from [colorArgb] when the picker enters
+ * composition (e.g. dialog open). It is NOT keyed on [colorArgb], so parent
+ * updates from [onColorChange] do not cancel an in-progress drag.
  */
 @Composable
 fun HsvColorPicker(
@@ -87,14 +93,30 @@ fun HsvColorPicker(
     onColorChange: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val initial = argbLongToColor(colorArgb)
-    val initialHsv = remember(colorArgb) { colorToHsv(initial) }
-    var hue by remember(colorArgb) { mutableFloatStateOf(initialHsv[0]) }
-    var saturation by remember(colorArgb) { mutableFloatStateOf(initialHsv[1]) }
-    var value by remember(colorArgb) { mutableFloatStateOf(initialHsv[2]) }
+    // Capture initial color only once — critical for smooth dragging while emitting.
+    val startHsv = remember { colorToHsv(argbLongToColor(colorArgb)) }
+    var hue by remember { mutableFloatStateOf(startHsv[0]) }
+    var saturation by remember { mutableFloatStateOf(startHsv[1]) }
+    var value by remember { mutableFloatStateOf(startHsv[2]) }
 
     fun emit(h: Float, s: Float, v: Float) {
         onColorChange(colorToArgbLong(hsvToColor(h, s, v)))
+    }
+
+    fun applySvFromOffset(x: Float, y: Float, width: Float, height: Float) {
+        if (width <= 0f || height <= 0f) return
+        val s = (x / width).coerceIn(0f, 1f)
+        val v = 1f - (y / height).coerceIn(0f, 1f)
+        saturation = s
+        value = v
+        emit(hue, s, v)
+    }
+
+    fun applyHueFromOffset(x: Float, width: Float) {
+        if (width <= 0f) return
+        val h = (x / width).coerceIn(0f, 1f) * 360f
+        hue = h
+        emit(h, saturation, value)
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -109,23 +131,25 @@ fun HsvColorPicker(
             Canvas(
                 modifier = Modifier
                     .matchParentSize()
-                    .pointerInput(hue) {
-                        detectTapGestures { offset ->
-                            val s = (offset.x / size.width).coerceIn(0f, 1f)
-                            val v = 1f - (offset.y / size.height).coerceIn(0f, 1f)
-                            saturation = s
-                            value = v
-                            emit(hue, s, v)
-                        }
-                    }
-                    .pointerInput(hue) {
-                        detectDragGestures { change, _ ->
-                            change.consume()
-                            val s = (change.position.x / size.width).coerceIn(0f, 1f)
-                            val v = 1f - (change.position.y / size.height).coerceIn(0f, 1f)
-                            saturation = s
-                            value = v
-                            emit(hue, s, v)
+                    // Unit key: do not restart the gesture detector when hue/S/V change.
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            applySvFromOffset(
+                                down.position.x,
+                                down.position.y,
+                                size.width.toFloat(),
+                                size.height.toFloat(),
+                            )
+                            drag(down.id) { change ->
+                                change.consume()
+                                applySvFromOffset(
+                                    change.position.x,
+                                    change.position.y,
+                                    size.width.toFloat(),
+                                    size.height.toFloat(),
+                                )
+                            }
                         }
                     },
             ) {
@@ -160,7 +184,7 @@ fun HsvColorPicker(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Hue bar
+        // Hue bar (same continuous pointer handling for consistency)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -172,18 +196,13 @@ fun HsvColorPicker(
                 modifier = Modifier
                     .matchParentSize()
                     .pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            val h = (offset.x / size.width).coerceIn(0f, 1f) * 360f
-                            hue = h
-                            emit(h, saturation, value)
-                        }
-                    }
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, _ ->
-                            change.consume()
-                            val h = (change.position.x / size.width).coerceIn(0f, 1f) * 360f
-                            hue = h
-                            emit(h, saturation, value)
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            applyHueFromOffset(down.position.x, size.width.toFloat())
+                            drag(down.id) { change ->
+                                change.consume()
+                                applyHueFromOffset(change.position.x, size.width.toFloat())
+                            }
                         }
                     },
             ) {
@@ -228,7 +247,10 @@ fun HsvColorPicker(
                     .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
             )
             Text(
-                text = String.format("#%06X", colorToArgbLong(hsvToColor(hue, saturation, value)).toInt() and 0xFFFFFF),
+                text = String.format(
+                    "#%06X",
+                    colorToArgbLong(hsvToColor(hue, saturation, value)).toInt() and 0xFFFFFF,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -279,6 +301,7 @@ fun ColorPickerField(
             onDismissRequest = { showDialog = false },
             title = { Text(text = label) },
             text = {
+                // key(draft at open) is implicit: dialog content is disposed on dismiss
                 HsvColorPicker(
                     colorArgb = draft,
                     onColorChange = { draft = it },
