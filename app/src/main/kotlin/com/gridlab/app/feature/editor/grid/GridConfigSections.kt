@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,8 +14,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
-import com.gridlab.app.core.model.ImageFilter
-import com.gridlab.app.core.model.ReferenceImage
 import com.gridlab.app.core.ui.ColorPickerField
 import java.util.Locale
 
@@ -112,37 +109,6 @@ internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun ImageFilterSection(image: ReferenceImage, viewModel: GridConfigViewModel) {
-    Text(
-        text = stringResource(R.string.image_filter_title),
-        style = MaterialTheme.typography.titleMedium,
-    )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = image.filter == ImageFilter.None,
-            onClick = { viewModel.setImageFilter(ImageFilter.None) },
-            enabled = !image.locked,
-            label = { Text(stringResource(R.string.image_filter_none)) },
-        )
-        FilterChip(
-            selected = image.filter == ImageFilter.Grayscale,
-            onClick = { viewModel.setImageFilter(ImageFilter.Grayscale) },
-            enabled = !image.locked,
-            label = { Text(stringResource(R.string.image_filter_grayscale)) },
-        )
-        FilterChip(
-            selected = image.filter == ImageFilter.HighContrast,
-            onClick = { viewModel.setImageFilter(ImageFilter.HighContrast) },
-            enabled = !image.locked,
-            label = { Text(stringResource(R.string.image_filter_high_contrast)) },
-        )
-    }
-}
-
-@Composable
 internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
     Slider(
         value = grid.lineStyle.strokeWidthMm.toFloat(),
@@ -216,81 +182,4 @@ internal fun GridSaveSection(
             },
         )
     }
-}
-
-@Composable
-internal fun CropSection(image: ReferenceImage, viewModel: GridConfigViewModel) {
-    Text(text = stringResource(R.string.crop_section_title), style = MaterialTheme.typography.titleMedium)
-    Text(
-        text = stringResource(R.string.crop_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    if (image.hasCrop) {
-        Text(
-            text = stringResource(R.string.crop_active),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-    CropEdgeSlider(
-        label = stringResource(R.string.crop_left),
-        value = image.cropLeft,
-        valueRange = 0f..(image.cropRight - 0.05f).coerceAtLeast(0f),
-        enabled = !image.locked,
-        onValueChange = { left ->
-            viewModel.setCrop(left, image.cropTop, image.cropRight, image.cropBottom)
-        },
-    )
-    CropEdgeSlider(
-        label = stringResource(R.string.crop_top),
-        value = image.cropTop,
-        valueRange = 0f..(image.cropBottom - 0.05f).coerceAtLeast(0f),
-        enabled = !image.locked,
-        onValueChange = { top ->
-            viewModel.setCrop(image.cropLeft, top, image.cropRight, image.cropBottom)
-        },
-    )
-    CropEdgeSlider(
-        label = stringResource(R.string.crop_right),
-        value = image.cropRight,
-        valueRange = (image.cropLeft + 0.05f).coerceAtMost(1f)..1f,
-        enabled = !image.locked,
-        onValueChange = { right ->
-            viewModel.setCrop(image.cropLeft, image.cropTop, right, image.cropBottom)
-        },
-    )
-    CropEdgeSlider(
-        label = stringResource(R.string.crop_bottom),
-        value = image.cropBottom,
-        valueRange = (image.cropTop + 0.05f).coerceAtMost(1f)..1f,
-        enabled = !image.locked,
-        onValueChange = { bottom ->
-            viewModel.setCrop(image.cropLeft, image.cropTop, image.cropRight, bottom)
-        },
-    )
-    OutlinedButton(
-        onClick = { viewModel.clearCrop() },
-        enabled = !image.locked && image.hasCrop,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = stringResource(R.string.crop_clear))
-    }
-}
-
-@Composable
-private fun CropEdgeSlider(
-    label: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    enabled: Boolean,
-    onValueChange: (Float) -> Unit,
-) {
-    Text(text = label, style = MaterialTheme.typography.bodyMedium)
-    Slider(
-        value = value.coerceIn(valueRange.start, valueRange.endInclusive),
-        onValueChange = onValueChange,
-        valueRange = if (valueRange.endInclusive > valueRange.start) valueRange else 0f..1f,
-        enabled = enabled,
-    )
 }
