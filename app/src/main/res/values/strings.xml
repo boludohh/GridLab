@@ -72,6 +72,11 @@
     <string name="editor_tool_image_content_description">Image settings</string>
     <string name="editor_tool_measure_content_description">Measurement tool</string>
     <string name="editor_tool_export_content_description">Export options</string>
+    <string name="editor_tool_paper_label">Paper</string>
+    <string name="editor_tool_grid_label">Grid</string>
+    <string name="editor_tool_image_label">Image</string>
+    <string name="editor_tool_measure_label">Measure</string>
+    <string name="editor_tool_export_label">Export</string>
     <string name="home_banner_content_description">GridLab drawing grid example</string>
     <string name="home_tagline_subtitle">Turn your reference into a grid drawing.</string>
     <string name="home_settings_content_description">Settings</string>
