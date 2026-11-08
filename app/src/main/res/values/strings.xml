@@ -64,9 +64,11 @@
     <string name="image_opacity_label">Image opacity</string>
     <string name="image_opacity_value">%1$d%%</string>
     <string name="image_reset_transform">Reset position and scale</string>
-    <string name="measure_section_title">Distance measurement</string>
-    <string name="measure_mode_on">Measuring</string>
-    <string name="measure_mode_off">Measure</string>
+    <string name="measure_mode_label">Mode</string>
+    <string name="measure_mode_on">On</string>
+    <string name="measure_mode_off">Off</string>
+    <string name="measure_distance_label">Distance</string>
+    <string name="measure_no_points">No points placed yet</string>
     <string name="measure_hint">Tap two points on the paper preview</string>
     <string name="measure_clear">Clear points</string>
     <string name="measure_distance_value">Distance: %1$s %2$s</string>
@@ -159,7 +161,7 @@
     <string name="paper_color_label">Color</string>
     <string name="grid_secondary_color_label">Color</string>
     <string name="grid_label_color_label">Color</string>
-    <string name="measure_color_label">Measure color</string>
+    <string name="measure_color_label">Color</string>
     <string name="color_picker_apply">Apply</string>
     <string name="color_picker_cancel">Cancel</string>
 </resources>
