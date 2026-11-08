@@ -491,6 +491,13 @@ class GridConfigViewModel @Inject constructor(
     fun placeMeasurePoint(xPx: Float, yPx: Float, viewport: ViewportTransform) {
         if (!_uiState.value.measureMode) return
         val docPoint = viewport.screenToDocumentMm(xPx, yPx)
+        val paper = _uiState.value.paper
+        // Ignore taps that fall outside the physical paper rectangle (mm space).
+        if (docPoint.first < 0.0 || docPoint.first > paper.widthMm ||
+            docPoint.second < 0.0 || docPoint.second > paper.heightMm
+        ) {
+            return
+        }
         _uiState.update { state ->
             when {
                 state.measurePoint1Mm == null -> state.copy(measurePoint1Mm = docPoint)

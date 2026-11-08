@@ -464,9 +464,16 @@ private fun PaperBackgroundCanvas(
             .fillMaxSize()
             .then(
                 if (measureMode) {
-                    Modifier.pointerInput(measureMode) {
+                    Modifier.pointerInput(measureMode, metrics.originX, metrics.originY, metrics.paperW, metrics.paperH) {
                         detectTapGestures { offset ->
-                            onMeasureTap(offset.x, offset.y, viewport)
+                            // Measure only on the physical paper, not the surrounding preview chrome.
+                            val left = metrics.originX
+                            val top = metrics.originY
+                            val right = left + metrics.paperW
+                            val bottom = top + metrics.paperH
+                            if (offset.x in left..right && offset.y in top..bottom) {
+                                onMeasureTap(offset.x, offset.y, viewport)
+                            }
                         }
                     }
                 } else {
