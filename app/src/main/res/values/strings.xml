@@ -126,11 +126,11 @@
     <string name="image_corrupt_message">Reference image file is corrupt or unreadable.</string>
     <string name="image_relink">Re-link image</string>
     <string name="image_remove_reference">Remove reference</string>
-    <string name="export_section_title">Export</string>
+    <string name="export_resolution_label">Resolution</string>
+    <string name="export_format_label">Format</string>
     <string name="export_dpi_label">%1$d DPI</string>
     <string name="export_dpi_label_unsafe">%1$d DPI (high)</string>
     <string name="export_max_safe_dpi">Max safe DPI on this device: %1$d</string>
-    <string name="export_action">Export JPG</string>
     <string name="export_action_jpg">Export JPG</string>
     <string name="export_action_png">Export PNG</string>
     <string name="export_action_pdf">Export PDF</string>

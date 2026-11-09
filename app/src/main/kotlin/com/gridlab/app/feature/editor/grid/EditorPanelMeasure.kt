@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
-import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.ui.ColorPickerField
 import com.gridlab.app.ui.theme.GridLabTheme
@@ -22,6 +21,10 @@ import com.gridlab.app.ui.theme.GridLabTheme
  * Bottom panel for the measure tool. Toolbar already shows "Measure"; this panel
  * only uses short block subtitles with leading icons (Mode, Color, Distance).
  * The Distance block is visible only when Mode is On.
+ *
+ * Note: the Color block uses ColorPickerField with iconRes directly (same pattern
+ * as Paper/Grid), not a separate EditorSectionHeader, to avoid duplicating the
+ * "Color" label that the field already renders.
  */
 @Composable
 internal fun EditorMeasurePanel(
@@ -61,18 +64,13 @@ internal fun EditorMeasurePanel(
             }
         }
 
-        // Block 2: Color (overlay color picker)
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            EditorSectionHeader(
-                iconRes = R.drawable.ic_palette_filled,
-                title = stringResource(R.string.measure_color_label),
-            )
-            ColorPickerField(
-                label = stringResource(R.string.measure_color_label),
-                colorArgb = uiState.measureColorArgb,
-                onColorChange = viewModel::setMeasureColorArgb,
-            )
-        }
+        // Block 2: Color (ColorPickerField with iconRes; no separate header needed)
+        ColorPickerField(
+            label = stringResource(R.string.measure_color_label),
+            colorArgb = uiState.measureColorArgb,
+            onColorChange = viewModel::setMeasureColorArgb,
+            iconRes = R.drawable.ic_palette_filled,
+        )
 
         // Block 3: Distance (only when mode is On)
         if (uiState.measureMode) {
