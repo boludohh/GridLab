@@ -1,8 +1,10 @@
 package com.gridlab.app
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -19,10 +21,6 @@ import com.gridlab.app.ui.configureEdgeToEdge
 import com.gridlab.app.ui.theme.GridLabTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * Root navigation destinations coordinated from MainActivity.
- * Kept simple and manual (no Navigation Compose) to match the existing pattern.
- */
 private sealed interface RootDestination {
     data object Home : RootDestination
     data object Settings : RootDestination
@@ -32,8 +30,23 @@ private sealed interface RootDestination {
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { _ ->
+        // Permission result handled; no action needed here
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Request storage permission on app launch for API 27-28 only
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                storagePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
         configureEdgeToEdge()
         setContent {
             GridLabTheme {

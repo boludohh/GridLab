@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfDocument
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
@@ -18,12 +17,12 @@ import com.gridlab.app.core.geometry.GridCalculator
 import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.ReferenceImage
 import java.io.File
-import java.io.FileOutputStream
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Renders a [Document] to an offscreen [Bitmap] and writes JPEG files.
+ * Renders a [Document] to an offscreen [Bitmap] and writes to OutputStream.
  * Uses [Bitmap.Config.RGB_565] for export memory efficiency.
  */
 @Singleton
@@ -77,63 +76,53 @@ class DocumentRenderer @Inject constructor() {
     }
 
     /**
-     * Renders and compresses JPEG into [outputFile]. Returns [outputFile] on success.
+     * Renders and compresses JPEG into [outputStream].
      */
     fun exportJpeg(
         document: Document,
         dpi: Int,
         imageFile: File?,
-        outputFile: File,
+        outputStream: OutputStream,
         quality: Int = 90,
-    ): File {
+    ) {
         val bitmap = renderToBitmap(document, dpi, imageFile)
         try {
-            outputFile.parentFile?.mkdirs()
-            FileOutputStream(outputFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(50, 100), out)
-            }
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(50, 100), outputStream)
         } finally {
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
             }
         }
-        return outputFile
     }
 
-
     /**
-     * Renders and compresses PNG into [outputFile]. Returns [outputFile] on success.
+     * Renders and compresses PNG into [outputStream].
      */
     fun exportPng(
         document: Document,
         dpi: Int,
         imageFile: File?,
-        outputFile: File,
-    ): File {
+        outputStream: OutputStream,
+    ) {
         val bitmap = renderToBitmap(document, dpi, imageFile)
         try {
-            outputFile.parentFile?.mkdirs()
-            FileOutputStream(outputFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
         } finally {
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
             }
         }
-        return outputFile
     }
 
     /**
-     * Renders the document at [dpi] and writes a single-page PDF whose page size
-     * matches the rendered bitmap (pixels at that DPI).
+     * Renders the document at [dpi] and writes a single-page PDF into [outputStream].
      */
     fun exportPdf(
         document: Document,
         dpi: Int,
         imageFile: File?,
-        outputFile: File,
-    ): File {
+        outputStream: OutputStream,
+    ) {
         val bitmap = renderToBitmap(document, dpi, imageFile)
         val pdf = PdfDocument()
         try {
@@ -141,17 +130,13 @@ class DocumentRenderer @Inject constructor() {
             val page = pdf.startPage(pageInfo)
             page.canvas.drawBitmap(bitmap, 0f, 0f, null)
             pdf.finishPage(page)
-            outputFile.parentFile?.mkdirs()
-            FileOutputStream(outputFile).use { out ->
-                pdf.writeTo(out)
-            }
+            pdf.writeTo(outputStream)
         } finally {
             pdf.close()
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
             }
         }
-        return outputFile
     }
 
     private fun drawReferenceImage(
@@ -204,7 +189,6 @@ class DocumentRenderer @Inject constructor() {
             val baseTop = marginTop + (contentH - srcRect.height() * fit) / 2f
             val offsetXPx = (image.offsetXMm * pxPerMm).toFloat()
             val offsetYPx = (image.offsetYMm * pxPerMm).toFloat()
-            // Center of fitted image moves with scale around center
             val centerX = baseLeft + srcRect.width() * fit / 2f + offsetXPx
             val centerY = baseTop + srcRect.height() * fit / 2f + offsetYPx
             val dst = RectF(
@@ -276,7 +260,6 @@ class DocumentRenderer @Inject constructor() {
             }
         }
     }
-
 
     private fun drawGridLabels(
         canvas: Canvas,

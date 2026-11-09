@@ -135,10 +135,11 @@
     <string name="export_action_png">Export PNG</string>
     <string name="export_action_pdf">Export PDF</string>
     <string name="export_in_progress">Exporting…</string>
-    <string name="export_success">Exported: %1$s</string>
+    <string name="export_success">Exported to %1$s</string>
     <string name="export_failed">Export failed</string>
     <string name="export_dpi_too_high">%1$d DPI needs too much memory. Max safe is %2$d DPI.</string>
     <string name="export_use_safe_dpi">Export at %1$d DPI</string>
+    <string name="export_permission_required">Storage permission required for export on this Android version</string>
     <string name="image_rotation_label">Rotation</string>
     <string name="image_rotation_value">%1$s°</string>
     <string name="grid_secondary_title">Secondary grid</string>

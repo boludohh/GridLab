@@ -1,5 +1,7 @@
 package com.gridlab.app.feature.editor.grid
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +62,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -86,7 +89,6 @@ import java.io.File
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Layout metrics for placing the reference image inside the paper preview. */
 private data class ImageLayerLayout(
     val marginLeft: Float,
     val marginTop: Float,
@@ -96,7 +98,6 @@ private data class ImageLayerLayout(
     val mmPerPx: Double,
 )
 
-/** Measure state + interaction callbacks for the paper preview (keeps DocumentPreview ≤ 8 params). */
 private data class PreviewInteraction(
     val measureMode: Boolean,
     val measurePoint1Mm: Pair<Double, Double>?,
@@ -106,7 +107,6 @@ private data class PreviewInteraction(
     val onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
 )
 
-/** Clips to a normalized crop rect (0..1) of the layout bounds. */
 private class FractionalCropShape(
     private val left: Float,
     private val top: Float,
@@ -180,11 +180,6 @@ fun GridConfigScreen(
     )
 }
 
-/**
- * Editor shell: fixed top bar, always-visible paper preview, tool toolbar and
- * a fixed-height bottom panel whose content scrolls internally. This keeps the
- * preview on screen while the user adjusts any setting.
- */
 @Composable
 private fun GridConfigContent(
     uiState: GridConfigUiState,
@@ -293,10 +288,6 @@ private fun EditorTopBar(
     }
 }
 
-/**
- * Fixed-height container for the active tool panel. Only its inner content
- * scrolls, so the panel keeps its size and shape while the preview stays put.
- */
 @Composable
 private fun EditorPanelHost(
     tool: EditorTool,
@@ -466,7 +457,6 @@ private fun PaperBackgroundCanvas(
                 if (measureMode) {
                     Modifier.pointerInput(measureMode, metrics.originX, metrics.originY, metrics.paperW, metrics.paperH) {
                         detectTapGestures { offset ->
-                            // Measure only on the physical paper, not the surrounding preview chrome.
                             val left = metrics.originX
                             val top = metrics.originY
                             val right = left + metrics.paperW
@@ -495,10 +485,6 @@ private fun PaperBackgroundCanvas(
     }
 }
 
-/**
- * Draws the reference image clipped to the physical paper rectangle: content
- * outside the sheet is not rendered, while the portion inside remains visible.
- */
 @Composable
 private fun PreviewImageLayer(
     imagePath: String?,
@@ -558,12 +544,7 @@ private fun ReferenceImageLayer(
     val userScale = image.scale.toFloat()
     val offsetXPx = (image.offsetXMm * layout.scale).toFloat()
     val offsetYPx = (image.offsetYMm * layout.scale).toFloat()
-    // Disable transform gestures when the image is locked OR when measure mode is active,
-    // so taps pass through to the paper's measure point detector.
     val gesturesEnabled = !image.locked && !measureMode
-    // Latest transform values read at gesture time so a simultaneous pinch or a
-    // rotation change never uses stale compensation factors, without restarting
-    // the pointerInput detector mid-gesture.
     val currentScale = rememberUpdatedState(userScale)
     val currentRotation = rememberUpdatedState(image.rotationDegrees)
     val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
@@ -589,7 +570,6 @@ private fun ReferenceImageLayer(
                 rotationZ = image.rotationDegrees
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
-                // Apply crop inside the graphicsLayer so it rotates with the image
                 if (image.hasCrop) {
                     shape = FractionalCropShape(
                         left = image.cropLeft,
@@ -605,11 +585,6 @@ private fun ReferenceImageLayer(
                     Modifier.pointerInput(image.locked, layout.scale, measureMode) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             if (pan != Offset.Zero) {
-                                // The pan arrives in the image's transformed space
-                                // (divided by userScale and rotated by -rotation because
-                                // this pointerInput lives inside the graphicsLayer). Map it
-                                // back to preview space so dragging feels 1:1 with the
-                                // finger at any scale and any rotation.
                                 val scale = currentScale.value
                                 val radians = Math.toRadians(currentRotation.value.toDouble())
                                 val cos = cos(radians).toFloat()

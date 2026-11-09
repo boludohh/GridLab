@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
+import com.gridlab.app.core.data.storage.ExportStorage
 import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.geometry.ExportSizeCalculator
 import com.gridlab.app.core.render.DocumentRenderer
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 import javax.inject.Inject
 
 data class GridConfigUiState(
@@ -41,7 +41,6 @@ data class GridConfigUiState(
     val paper: Paper = Paper.defaultA4(),
     val grid: Grid = Grid.default(),
     val referenceImage: ReferenceImage? = null,
-    /** Absolute path for Coil; only set when [imageAvailability] is Present. */
     val imageAbsolutePath: String? = null,
     val imageAvailability: ImageAvailability = ImageAvailability.None,
     val isLoading: Boolean = true,
@@ -49,24 +48,18 @@ data class GridConfigUiState(
     val isImporting: Boolean = false,
     val lastSaveSucceeded: Boolean? = null,
     val importError: Boolean = false,
-    /** True when local edits are not yet persisted. */
     val isDirty: Boolean = false,
-    /** When true, taps on the preview place measure points instead of transforming the image. */
     val measureMode: Boolean = false,
-    /** First measure point in document mm (paper top-left origin), or null. */
     val measurePoint1Mm: Pair<Double, Double>? = null,
-    /** Second measure point in document mm, or null. */
     val measurePoint2Mm: Pair<Double, Double>? = null,
-    /** Packed ARGB for measure overlay (tool chrome; not part of the document). */
     val measureColorArgb: Long = 0xFF1565C0,
     val selectedExportDpi: Int = 150,
     val maxSafeExportDpi: Int = 300,
     val isExporting: Boolean = false,
     val exportMessage: String? = null,
-    val lastExportPath: String? = null,
+    val lastExportLocation: String? = null,
 )
 
-/** Distance in the paper's display unit, or null if both points are not set. */
 fun GridConfigUiState.measureDistanceDisplay(): Double? {
     val p1 = measurePoint1Mm ?: return null
     val p2 = measurePoint2Mm ?: return null
@@ -79,6 +72,7 @@ fun GridConfigUiState.measureDistanceDisplay(): Double? {
 class GridConfigViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
     private val imageStorage: ImageStorage,
+    private val exportStorage: ExportStorage,
     private val documentRenderer: DocumentRenderer,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
@@ -160,15 +154,11 @@ class GridConfigViewModel @Inject constructor(
                     minOf(preferred, safe).coerceAtLeast(1)
                 },
                 exportMessage = null,
-                lastExportPath = null,
+                lastExportLocation = null,
             )
         }
     }
 
-    /**
-     * Imports (or re-links) a gallery image. Always starts from default transform/crop
-     * so a re-link does not keep offsets that belonged to a different photo.
-     */
     fun importImage(uri: Uri) {
         val state = _uiState.value
         if (state.documentId.isEmpty() || state.isImporting) return
@@ -198,10 +188,6 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Removes the reference image from the document without changing paper or grid.
-     * Deletes the private file when present.
-     */
     fun removeReferenceImage() {
         val state = _uiState.value
         if (state.documentId.isEmpty() || state.referenceImage == null) return
@@ -222,16 +208,11 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    /** Manual save from UI; also cancels a pending debounced autosave. */
     fun saveDocument() {
         autosaveJob?.cancel()
         viewModelScope.launch { persistIfDirty(showStatus = true) }
     }
 
-    /**
-     * Immediate flush for lifecycle ON_STOP (and back navigation).
-     * Does not toggle the manual-save status labels.
-     */
     fun flushPendingSave() {
         autosaveJob?.cancel()
         viewModelScope.launch { persistIfDirty(showStatus = false) }
@@ -279,8 +260,6 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    // --- Paper setters ------------------------------------------------------
-
     fun setPaperFormat(format: StandardPaperFormat) {
         if (_uiState.value.paper.format == format) return
         updatePaper {
@@ -323,7 +302,6 @@ class GridConfigViewModel @Inject constructor(
                 )
             }
         }
-
     }
 
     fun setDisplayUnit(unit: LengthUnit) {
@@ -384,8 +362,6 @@ class GridConfigViewModel @Inject constructor(
         scheduleAutosave()
     }
 
-    // --- Grid setters -------------------------------------------------------
-
     fun setRows(rows: Int) {
         updateGrid { copy(rows = rows.coerceIn(1, MAX_DIVISIONS)) }
     }
@@ -438,8 +414,6 @@ class GridConfigViewModel @Inject constructor(
         updateGrid { copy(labelsVisible = visible) }
     }
 
-    // --- Image setters ------------------------------------------------------
-
     fun panImage(deltaXMm: Double, deltaYMm: Double) {
         updateImage { ImageTransformCalculator.pan(this, deltaXMm, deltaYMm) }
     }
@@ -472,8 +446,6 @@ class GridConfigViewModel @Inject constructor(
         updateImage { ImageTransformCalculator.withFilter(this, filter) }
     }
 
-    // --- Measure tool -------------------------------------------------------
-
     fun setMeasureMode(enabled: Boolean) {
         _uiState.update {
             it.copy(
@@ -484,15 +456,10 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Places the next measure point from a screen tap, converted via [viewport].
-     * First tap → point1, second → point2, third → restarts at point1.
-     */
     fun placeMeasurePoint(xPx: Float, yPx: Float, viewport: ViewportTransform) {
         if (!_uiState.value.measureMode) return
         val docPoint = viewport.screenToDocumentMm(xPx, yPx)
         val paper = _uiState.value.paper
-        // Ignore taps that fall outside the physical paper rectangle (mm space).
         if (docPoint.first < 0.0 || docPoint.first > paper.widthMm ||
             docPoint.second < 0.0 || docPoint.second > paper.heightMm
         ) {
@@ -510,8 +477,6 @@ class GridConfigViewModel @Inject constructor(
     fun clearMeasurePoints() {
         _uiState.update { it.copy(measurePoint1Mm = null, measurePoint2Mm = null) }
     }
-
-    // --- Crop ---------------------------------------------------------------
 
     fun setCrop(left: Float, top: Float, right: Float, bottom: Float) {
         updateImage { ImageTransformCalculator.withCrop(this, left, top, right, bottom) }
@@ -544,8 +509,6 @@ class GridConfigViewModel @Inject constructor(
         scheduleAutosave()
     }
 
-    // --- Export --------------------------------------------------------------
-
     fun setExportDpi(dpi: Int) {
         _uiState.update { it.copy(selectedExportDpi = dpi.coerceAtLeast(1), exportMessage = null) }
     }
@@ -561,6 +524,10 @@ class GridConfigViewModel @Inject constructor(
     fun exportPdf() {
         exportDocument(ExportFormat.Pdf)
     }
+
+    fun requiresStoragePermission(): Boolean = exportStorage.requiresStoragePermission()
+
+    fun hasStoragePermission(): Boolean = exportStorage.hasStoragePermission()
 
     private fun exportDocument(format: ExportFormat) {
         val state = _uiState.value
@@ -580,7 +547,7 @@ class GridConfigViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update {
-                it.copy(isExporting = true, exportMessage = null, lastExportPath = null)
+                it.copy(isExporting = true, exportMessage = null, lastExportLocation = null)
             }
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -596,30 +563,24 @@ class GridConfigViewModel @Inject constructor(
                         val file = imageStorage.resolveAbsoluteFile(relative)
                         if (file.isFile) file else null
                     }
-                    val dir = File(appContext.getExternalFilesDir(null), "exports")
-                    val safeName = state.documentName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
-                        .ifBlank { "export" }
-                    val extension = when (format) {
-                        ExportFormat.Jpeg -> "jpg"
-                        ExportFormat.Png -> "png"
-                        ExportFormat.Pdf -> "pdf"
+                    val (outputStream, location) = exportStorage.openOutputStream(format)
+                    outputStream.use { stream ->
+                        when (format) {
+                            ExportFormat.Jpeg ->
+                                documentRenderer.exportJpeg(document, dpi, imageFile, stream)
+                            ExportFormat.Png ->
+                                documentRenderer.exportPng(document, dpi, imageFile, stream)
+                            ExportFormat.Pdf ->
+                                documentRenderer.exportPdf(document, dpi, imageFile, stream)
+                        }
                     }
-                    val out = File(dir, safeName + "_" + dpi + "dpi." + extension)
-                    when (format) {
-                        ExportFormat.Jpeg ->
-                            documentRenderer.exportJpeg(document, dpi, imageFile, out)
-                        ExportFormat.Png ->
-                            documentRenderer.exportPng(document, dpi, imageFile, out)
-                        ExportFormat.Pdf ->
-                            documentRenderer.exportPdf(document, dpi, imageFile, out)
-                    }
-                    out.absolutePath
+                    location
                 }
-            }.onSuccess { path ->
+            }.onSuccess { location ->
                 _uiState.update {
                     it.copy(
                         isExporting = false,
-                        lastExportPath = path,
+                        lastExportLocation = location,
                         exportMessage = "OK",
                         maxSafeExportDpi = safeDpi,
                     )

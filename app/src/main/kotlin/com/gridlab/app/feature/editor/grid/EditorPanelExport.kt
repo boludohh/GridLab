@@ -1,5 +1,9 @@
 package com.gridlab.app.feature.editor.grid
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,27 +15,60 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
+import com.gridlab.app.core.model.ExportFormat
 import com.gridlab.app.ui.theme.GridLabTheme
 
-/**
- * Bottom panel for export. Toolbar already shows "Export"; this panel only uses
- * short block subtitles with leading icons (Resolution, Format).
- */
 @Composable
 internal fun EditorExportPanel(
     uiState: GridConfigUiState,
     viewModel: GridConfigViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val requiresPermission = viewModel.requiresStoragePermission()
+    var pendingExportFormat by remember { mutableStateOf<ExportFormat?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            pendingExportFormat?.let { format ->
+                when (format) {
+                    ExportFormat.Jpeg -> viewModel.exportJpeg()
+                    ExportFormat.Png -> viewModel.exportPng()
+                    ExportFormat.Pdf -> viewModel.exportPdf()
+                }
+            }
+        }
+        pendingExportFormat = null
+    }
+
+    fun requestExport(format: ExportFormat) {
+        if (requiresPermission && !viewModel.hasStoragePermission()) {
+            pendingExportFormat = format
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            when (format) {
+                ExportFormat.Jpeg -> viewModel.exportJpeg()
+                ExportFormat.Png -> viewModel.exportPng()
+                ExportFormat.Pdf -> viewModel.exportPdf()
+            }
+        }
+    }
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // Block 1: Resolution (DPI selection + safety info)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             EditorSectionHeader(
                 iconRes = R.drawable.ic_high_quality_filled,
@@ -43,7 +80,6 @@ internal fun EditorExportPanel(
             )
         }
 
-        // Block 2: Format (JPG/PNG/PDF actions + status)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             EditorSectionHeader(
                 iconRes = R.drawable.ic_file_export_filled,
@@ -51,7 +87,16 @@ internal fun EditorExportPanel(
             )
             ExportFormatSection(
                 uiState = uiState,
-                viewModel = viewModel,
+                onExportClick = { format -> requestExport(format) },
+            )
+        }
+
+        if (requiresPermission && !viewModel.hasStoragePermission()) {
+            val colors = GridLabTheme.colors
+            Text(
+                text = stringResource(R.string.export_permission_required),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.warning,
             )
         }
     }
@@ -123,7 +168,7 @@ private fun ExportResolutionSection(
 @Composable
 private fun ExportFormatSection(
     uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    onExportClick: (ExportFormat) -> Unit,
 ) {
     val colors = GridLabTheme.colors
     val exportEnabled = !uiState.isExporting && uiState.documentId.isNotEmpty()
@@ -135,21 +180,21 @@ private fun ExportFormatSection(
         )
     }
     OutlinedButton(
-        onClick = { viewModel.exportJpeg() },
+        onClick = { onExportClick(ExportFormat.Jpeg) },
         enabled = exportEnabled,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(text = stringResource(R.string.export_action_jpg))
     }
     OutlinedButton(
-        onClick = { viewModel.exportPng() },
+        onClick = { onExportClick(ExportFormat.Png) },
         enabled = exportEnabled,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(text = stringResource(R.string.export_action_png))
     }
     OutlinedButton(
-        onClick = { viewModel.exportPdf() },
+        onClick = { onExportClick(ExportFormat.Pdf) },
         enabled = exportEnabled,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -160,7 +205,7 @@ private fun ExportFormatSection(
             Text(
                 text = stringResource(
                     R.string.export_success,
-                    uiState.lastExportPath.orEmpty(),
+                    uiState.lastExportLocation.orEmpty(),
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.success,
@@ -173,6 +218,5 @@ private fun ExportFormatSection(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        // "DPI_TOO_HIGH" is handled inside ExportResolutionSection next to the chips.
     }
 }
