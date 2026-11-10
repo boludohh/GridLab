@@ -32,6 +32,7 @@ import com.gridlab.app.ui.theme.GridLabTheme
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenAbout: () -> Unit,
     onOpenSourceLicenses: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -52,6 +53,10 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SettingsSectionCard {
+                SettingsNavRow(
+                    title = stringResource(R.string.settings_about),
+                    onClick = onOpenAbout,
+                )
                 SettingsNavRow(
                     title = stringResource(R.string.settings_open_source_licenses),
                     onClick = onOpenSourceLicenses,

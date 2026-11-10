@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.gridlab.app.feature.editor.grid.GridConfigScreen
 import com.gridlab.app.feature.main.MainScreen
+import com.gridlab.app.feature.settings.AboutScreen
 import com.gridlab.app.feature.settings.OpenSourceLicensesScreen
 import com.gridlab.app.feature.settings.SettingsScreen
 import com.gridlab.app.ui.configureEdgeToEdge
@@ -25,6 +26,7 @@ private sealed interface RootDestination {
     data object Home : RootDestination
     data object Settings : RootDestination
     data object OpenSourceLicenses : RootDestination
+    data object About : RootDestination
     data class Editor(val documentId: String) : RootDestination
 }
 
@@ -70,6 +72,18 @@ class MainActivity : ComponentActivity() {
                         is RootDestination.Settings -> {
                             SettingsScreen(
                                 onBack = { destination = RootDestination.Home },
+                                onOpenAbout = {
+                                    destination = RootDestination.About
+                                },
+                                onOpenSourceLicenses = {
+                                    destination = RootDestination.OpenSourceLicenses
+                                },
+                                modifier = pad,
+                            )
+                        }
+                        is RootDestination.About -> {
+                            AboutScreen(
+                                onBack = { destination = RootDestination.Settings },
                                 onOpenSourceLicenses = {
                                     destination = RootDestination.OpenSourceLicenses
                                 },

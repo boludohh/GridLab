@@ -20,7 +20,7 @@
     <string name="paper_margin_bottom">Bottom</string>
     <string name="paper_printable_area">Printable area: %1$s × %2$s %3$s</string>
     <string name="paper_full_size">Full size: %1$s × %2$s %3$s</string>
-    <string name="paper_save">Save</string>
+    <string name="paper_save">Saved</string>
     <string name="paper_saving">Saving…</string>
     <string name="paper_save_success">Saved</string>
     <string name="paper_save_error">Could not save</string>
@@ -121,7 +121,7 @@
     <string name="projects_back">Back to home</string>
     <string name="projects_id_hint">id: %1$s…</string>
     <string name="paper_autosaved">Saved automatically</string>
-    <string name="paper_dirty">Unsaved changes…</string>
+    <string name="paper_dirty">Saving...</string>
     <string name="image_missing_message">Reference image file is missing from device storage.</string>
     <string name="image_corrupt_message">Reference image file is corrupt or unreadable.</string>
     <string name="image_relink">Re-link image</string>
@@ -157,6 +157,20 @@
     <string name="settings_title">Settings</string>
     <string name="settings_back_content_description">Back</string>
     <string name="settings_open_source_licenses">Open-source licenses</string>
+
+    <string name="settings_about">About GridLab</string>
+    <string name="about_title">About</string>
+    <string name="about_app_name">GridLab</string>
+    <string name="about_version_fallback">1.0.0</string>
+    <string name="about_developed_by">DEVELOPED BY</string>
+    <string name="about_developer_name">Lautyboo</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_instagram">Instagram</string>
+    <string name="about_tiktok">TikTok</string>
+    <string name="about_source_code">Source code</string>
+    <string name="about_releases">Releases</string>
+    <string name="about_distribution_note">Distributed via GitHub Releases, OpenAPK and Orion Store.</string>
+
     <string name="settings_licenses_load_error">Could not load license text.</string>
 
     <string name="paper_color_label">Color</string>
