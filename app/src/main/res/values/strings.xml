@@ -169,6 +169,14 @@
     <string name="about_tiktok">TikTok</string>
     <string name="about_source_code">Source code</string>
     <string name="about_releases">Releases</string>
+    
+    <string name="about_url_github_profile" translatable="false">https://github.com/gentomai</string>
+    <string name="about_url_github_repo" translatable="false">https://github.com/gentomai/GridLab</string>
+    <string name="about_url_github_releases" translatable="false">https://github.com/gentomai/GridLab/releases</string>
+    <string name="about_url_github_avatar" translatable="false">https://avatars.githubusercontent.com/u/306046345?v=4</string>
+    <string name="about_url_instagram" translatable="false">https://www.instagram.com/lautaro.acosta.20</string>
+    <string name="about_url_tiktok" translatable="false">https://www.tiktok.com/@boludohh</string>
+
     <string name="about_distribution_note">Distributed via GitHub Releases, OpenAPK and Orion Store.</string>
 
     <string name="settings_licenses_load_error">Could not load license text.</string>

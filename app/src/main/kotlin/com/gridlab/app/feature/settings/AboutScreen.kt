@@ -1,6 +1,11 @@
 package com.gridlab.app.feature.settings
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,18 +32,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.gridlab.app.R
 import com.gridlab.app.ui.theme.GridLabTheme
 
 /**
- * About GridLab — visual identity, developer and project links.
- * External links are intentionally not wired yet (UI only).
+ * About GridLab — identity, developer profile and project links.
+ * External URLs open with the system default handler (no chooser).
  */
 @Composable
 fun AboutScreen(
@@ -62,6 +69,13 @@ fun AboutScreen(
         }.getOrElse { "" }
     }
 
+    val githubProfileUrl = stringResource(R.string.about_url_github_profile)
+    val githubRepoUrl = stringResource(R.string.about_url_github_repo)
+    val githubReleasesUrl = stringResource(R.string.about_url_github_releases)
+    val instagramUrl = stringResource(R.string.about_url_instagram)
+    val tiktokUrl = stringResource(R.string.about_url_tiktok)
+    val avatarUrl = stringResource(R.string.about_url_github_avatar)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -76,7 +90,6 @@ fun AboutScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // App identity card
             AboutCard {
                 Column(
                     modifier = Modifier
@@ -122,7 +135,6 @@ fun AboutScreen(
                 }
             }
 
-            // Developer card
             AboutCard {
                 Column(
                     modifier = Modifier
@@ -139,11 +151,13 @@ fun AboutScreen(
                             .border(2.dp, colors.e3, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = developerName.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textPrimary,
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = developerName,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            placeholder = painterResource(R.drawable.ic_circle_filled),
+                            error = painterResource(R.drawable.ic_circle_filled),
                         )
                     }
                     Spacer(modifier = Modifier.height(14.dp))
@@ -166,38 +180,36 @@ fun AboutScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // Visual only — links not wired yet
                         SocialIconButton(
                             iconRes = R.drawable.ic_github,
                             contentDescription = stringResource(R.string.about_github),
-                            onClick = { /* TODO: open GitHub */ },
+                            onClick = { openUrl(context, githubProfileUrl) },
                         )
                         SocialIconButton(
                             iconRes = R.drawable.ic_instagram,
                             contentDescription = stringResource(R.string.about_instagram),
-                            onClick = { /* TODO: open Instagram */ },
+                            onClick = { openUrl(context, instagramUrl) },
                         )
                         SocialIconButton(
                             iconRes = R.drawable.ic_tiktok,
                             contentDescription = stringResource(R.string.about_tiktok),
-                            onClick = { /* TODO: open TikTok */ },
+                            onClick = { openUrl(context, tiktokUrl) },
                         )
                     }
                 }
             }
 
-            // Project links card
             AboutCard {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     AboutLinkRow(
                         iconRes = R.drawable.ic_code,
                         title = stringResource(R.string.about_source_code),
-                        onClick = { /* TODO: open repository */ },
+                        onClick = { openUrl(context, githubRepoUrl) },
                     )
                     AboutLinkRow(
                         iconRes = R.drawable.ic_new_releases,
                         title = stringResource(R.string.about_releases),
-                        onClick = { /* TODO: open releases */ },
+                        onClick = { openUrl(context, githubReleasesUrl) },
                     )
                     AboutLinkRow(
                         iconRes = R.drawable.ic_article_filled,
@@ -219,6 +231,19 @@ fun AboutScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+/** Opens [url] with the default app/browser. Does not show a chooser. */
+private fun openUrl(context: Context, url: String) {
+    val uri = Uri.parse(url)
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // No handler available; ignore quietly for About polish.
     }
 }
 
@@ -277,7 +302,7 @@ private fun AboutCard(
 
 @Composable
 private fun SocialIconButton(
-    iconRes: Int,
+    @DrawableRes iconRes: Int,
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -302,7 +327,7 @@ private fun SocialIconButton(
 
 @Composable
 private fun AboutLinkRow(
-    iconRes: Int,
+    @DrawableRes iconRes: Int,
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -312,26 +337,38 @@ private fun AboutLinkRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            tint = colors.iconActive,
-            modifier = Modifier.size(22.dp),
-        )
+        Box(
+            modifier = Modifier.size(36.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_circle_filled),
+                contentDescription = null,
+                tint = colors.e2,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = colors.iconActive,
+                modifier = Modifier.size(18.dp),
+            )
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             color = colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            text = "›",
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.textTertiary,
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = colors.textTertiary,
+            modifier = Modifier.size(22.dp),
         )
     }
 }
