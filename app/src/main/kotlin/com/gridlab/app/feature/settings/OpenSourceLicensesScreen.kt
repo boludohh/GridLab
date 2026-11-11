@@ -249,10 +249,10 @@ private fun LicensesTopBar(
 
 /**
  * GitHub-style table with auto-width columns and full grid separators.
- * Each column is sized to fit its longest cell content (no truncation).
- * Cells are then re-measured to exactly fill their grid rectangle, so the
- * vertical and horizontal separators form continuous straight lines.
- * The table scrolls horizontally if it exceeds the available width.
+ *
+ * Natural cell sizes are read with intrinsic measurements (never a first
+ * measure pass). Each cell is then measured exactly once to fill its grid
+ * rectangle so separators form continuous lines. Horizontal scroll if needed.
  */
 @Composable
 private fun GithubStyleTable(
@@ -292,7 +292,6 @@ private fun GithubStyleTable(
                                 .layoutId(TableCellPosition(rowIndex, colIndex))
                                 .background(cellBg)
                                 .drawBehind {
-                                    // Vertical separator (right edge of cell)
                                     if (!isLastCol) {
                                         drawLine(
                                             color = borderColor,
@@ -301,7 +300,6 @@ private fun GithubStyleTable(
                                             strokeWidth = borderWidthPx,
                                         )
                                     }
-                                    // Horizontal separator (bottom edge of cell)
                                     if (!isLastRow) {
                                         drawLine(
                                             color = borderColor,
@@ -327,35 +325,25 @@ private fun GithubStyleTable(
                 }
             },
             measurePolicy = { measurables, _ ->
-                // Pass 1: measure every cell unconstrained to read its natural size.
-                val natural = measurables.map { measurable ->
-                    val position = measurable.layoutId as TableCellPosition
-                    val placeable = measurable.measure(
-                        Constraints(
-                            maxWidth = Constraints.Infinity,
-                            maxHeight = Constraints.Infinity,
-                        ),
-                    )
-                    Triple(position, placeable, measurable)
-                }
-
-                // Column width = widest natural cell in that column.
-                val numCols = (natural.maxOfOrNull { it.first.column } ?: 0) + 1
-                val columnWidths = IntArray(numCols)
-                natural.forEach { (pos, placeable, _) ->
-                    columnWidths[pos.column] = maxOf(columnWidths[pos.column], placeable.width)
-                }
-
-                // Row height = tallest natural cell in that row.
+                // Intrinsics only — do not call measure() here.
+                val numCols = (measurables.maxOfOrNull {
+                    (it.layoutId as TableCellPosition).column
+                } ?: 0) + 1
                 val numRows = rows.size
+                val columnWidths = IntArray(numCols)
                 val rowHeights = IntArray(numRows)
-                natural.forEach { (pos, placeable, _) ->
-                    rowHeights[pos.row] = maxOf(rowHeights[pos.row], placeable.height)
+
+                measurables.forEach { measurable ->
+                    val pos = measurable.layoutId as TableCellPosition
+                    val naturalWidth = measurable.maxIntrinsicWidth(Constraints.Infinity)
+                    val naturalHeight = measurable.maxIntrinsicHeight(naturalWidth)
+                    columnWidths[pos.column] = maxOf(columnWidths[pos.column], naturalWidth)
+                    rowHeights[pos.row] = maxOf(rowHeights[pos.row], naturalHeight)
                 }
 
-                // Pass 2: force every cell to fill its grid rectangle exactly, so
-                // separators drawn at cell edges line up into continuous straight lines.
-                val cells = natural.map { (pos, _, measurable) ->
+                // Single measure pass with fixed grid cell sizes.
+                val cells = measurables.map { measurable ->
+                    val pos = measurable.layoutId as TableCellPosition
                     val placeable = measurable.measure(
                         Constraints(
                             minWidth = columnWidths[pos.column],
