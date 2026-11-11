@@ -216,7 +216,7 @@ fun AboutScreen(
                         color = colors.e2,
                     )
                     AboutLinkRow(
-                        iconRes = R.drawable.ic_article_filled,
+                        iconRes = R.drawable.ic_license,
                         title = stringResource(R.string.settings_open_source_licenses),
                         onClick = onOpenSourceLicenses,
                     )
@@ -337,8 +337,8 @@ private fun AboutLinkRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
-    // Circle slightly larger than the glyph; sizes in dp scale with density.
-    val circleSize = 40.dp
+    // Same proportion as SocialIconButton: 44.dp circle, 22.dp glyph.
+    val circleSize = 44.dp
     val glyphSize = 22.dp
     Row(
         modifier = modifier
@@ -349,15 +349,12 @@ private fun AboutLinkRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
-            modifier = Modifier.size(circleSize),
+            modifier = Modifier
+                .size(circleSize)
+                .clip(CircleShape)
+                .background(colors.e2),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_circle_filled),
-                contentDescription = null,
-                tint = colors.e2,
-                modifier = Modifier.fillMaxSize(),
-            )
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
