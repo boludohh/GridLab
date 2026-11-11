@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -97,19 +98,12 @@ fun AboutScreen(
                         .padding(horizontal = 20.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(colors.e1),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            modifier = Modifier.size(72.dp),
-                        )
-                    }
+                    Image(
+                        painter = painterResource(R.drawable.gridlab_icon),
+                        contentDescription = stringResource(R.string.about_app_name),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(88.dp),
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(R.string.about_app_name),
@@ -206,10 +200,20 @@ fun AboutScreen(
                         title = stringResource(R.string.about_source_code),
                         onClick = { openUrl(context, githubRepoUrl) },
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        thickness = 1.dp,
+                        color = colors.e2,
+                    )
                     AboutLinkRow(
                         iconRes = R.drawable.ic_new_releases,
                         title = stringResource(R.string.about_releases),
                         onClick = { openUrl(context, githubReleasesUrl) },
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        thickness = 1.dp,
+                        color = colors.e2,
                     )
                     AboutLinkRow(
                         iconRes = R.drawable.ic_article_filled,
@@ -333,6 +337,9 @@ private fun AboutLinkRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
+    // Circle slightly larger than the glyph; sizes in dp scale with density.
+    val circleSize = 40.dp
+    val glyphSize = 22.dp
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -342,7 +349,7 @@ private fun AboutLinkRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(circleSize),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -355,7 +362,7 @@ private fun AboutLinkRow(
                 painter = painterResource(iconRes),
                 contentDescription = null,
                 tint = colors.iconActive,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(glyphSize),
             )
         }
         Text(
