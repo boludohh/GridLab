@@ -75,9 +75,6 @@ class MainActivity : ComponentActivity() {
                                 onOpenAbout = {
                                     destination = RootDestination.About
                                 },
-                                onOpenSourceLicenses = {
-                                    destination = RootDestination.OpenSourceLicenses
-                                },
                                 modifier = pad,
                             )
                         }
@@ -92,7 +89,7 @@ class MainActivity : ComponentActivity() {
                         }
                         is RootDestination.OpenSourceLicenses -> {
                             OpenSourceLicensesScreen(
-                                onBack = { destination = RootDestination.Settings },
+                                onBack = { destination = RootDestination.About },
                                 modifier = pad,
                             )
                         }

@@ -1,5 +1,6 @@
 package com.gridlab.app.feature.settings
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +34,6 @@ import com.gridlab.app.ui.theme.GridLabTheme
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
-    onOpenSourceLicenses: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
@@ -54,12 +54,9 @@ fun SettingsScreen(
         ) {
             SettingsSectionCard {
                 SettingsNavRow(
+                    iconRes = R.drawable.ic_info_filled,
                     title = stringResource(R.string.settings_about),
                     onClick = onOpenAbout,
-                )
-                SettingsNavRow(
-                    title = stringResource(R.string.settings_open_source_licenses),
-                    onClick = onOpenSourceLicenses,
                 )
             }
         }
@@ -122,28 +119,48 @@ private fun SettingsSectionCard(
 
 @Composable
 private fun SettingsNavRow(
+    @DrawableRes iconRes: Int,
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
+    // Same proportion as About link rows / social buttons: 44.dp circle, 22.dp glyph.
+    val circleSize = 44.dp
+    val glyphSize = 22.dp
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        Box(
+            modifier = Modifier
+                .size(circleSize)
+                .clip(CircleShape)
+                .background(colors.e2),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = colors.iconActive,
+                modifier = Modifier.size(glyphSize),
+            )
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             color = colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            text = "›",
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.textTertiary,
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = colors.textTertiary,
+            modifier = Modifier.size(22.dp),
         )
     }
 }
