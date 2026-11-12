@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ import com.gridlab.app.ui.theme.GridLabTheme
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenLanguageAppearance: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
@@ -53,6 +55,16 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SettingsSectionCard {
+                SettingsNavRow(
+                    iconRes = R.drawable.ic_tune,
+                    title = stringResource(R.string.settings_language_appearance),
+                    onClick = onOpenLanguageAppearance,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    thickness = 1.dp,
+                    color = colors.e2,
+                )
                 SettingsNavRow(
                     iconRes = R.drawable.ic_info_filled,
                     title = stringResource(R.string.settings_about),
@@ -125,7 +137,6 @@ private fun SettingsNavRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
-    // Same proportion as About link rows / social buttons: 44.dp circle, 22.dp glyph.
     val circleSize = 44.dp
     val glyphSize = 22.dp
     Row(

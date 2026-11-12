@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.coil.compose)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.markdown.renderer)

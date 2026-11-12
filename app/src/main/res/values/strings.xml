@@ -159,6 +159,11 @@
     <string name="settings_open_source_licenses">Open-source licenses</string>
 
     <string name="settings_about">About GridLab</string>
+
+    <string name="settings_language_appearance">Language &amp; appearance</string>
+    <string name="settings_theme_toggle_content_description">Change theme</string>
+    <string name="settings_language_coming_soon">Language options will be available in a future update.</string>
+
     <string name="about_title">About</string>
     <string name="about_app_name">GridLab</string>
     <string name="about_version_fallback">1.0.0</string>
