@@ -23,6 +23,11 @@ class ThemePreferencesRepository @Inject constructor(
         }
     }
 
+    /** Null means follow the system language. */
+    val language: Flow<AppLanguage?> = dataStore.data.map { prefs ->
+        AppLanguage.fromTag(prefs[KEY_LANGUAGE])
+    }
+
     suspend fun setThemeMode(mode: GridLabThemeMode) {
         dataStore.edit { prefs ->
             prefs[KEY_THEME_MODE] = when (mode) {
@@ -33,8 +38,15 @@ class ThemePreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setLanguage(language: AppLanguage) {
+        dataStore.edit { prefs ->
+            prefs[KEY_LANGUAGE] = language.tag
+        }
+    }
+
     companion object {
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        private val KEY_LANGUAGE = stringPreferencesKey("language")
         private const val VALUE_LIGHT = "light"
         private const val VALUE_DARK = "dark"
         private const val VALUE_NIGHT = "night"

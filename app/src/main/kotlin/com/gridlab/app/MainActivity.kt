@@ -20,9 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gridlab.app.core.preferences.AppLanguage
 import com.gridlab.app.core.preferences.ThemePreferencesRepository
+import com.gridlab.app.ui.AppLocale
 import com.gridlab.app.feature.editor.grid.GridConfigScreen
 import com.gridlab.app.feature.main.MainScreen
 import com.gridlab.app.feature.settings.AboutScreen
@@ -75,6 +78,7 @@ class MainActivity : ComponentActivity() {
         configureEdgeToEdge()
         setContent {
             val storedMode by themePreferences.themeMode.collectAsStateWithLifecycle(initialValue = null)
+            val storedLanguage by themePreferences.language.collectAsStateWithLifecycle(initialValue = null)
             val systemDark = isSystemInDarkTheme()
             val resolvedMode = storedMode ?: if (systemDark) {
                 GridLabThemeMode.Dark
@@ -85,6 +89,10 @@ class MainActivity : ComponentActivity() {
             var themeMode by remember { mutableStateOf(resolvedMode) }
             LaunchedEffect(resolvedMode) {
                 themeMode = resolvedMode
+            }
+
+            LaunchedEffect(storedLanguage) {
+                AppLocale.apply(storedLanguage)
             }
 
             val revealState = remember { ThemeRevealState() }
@@ -170,12 +178,23 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             is RootDestination.LanguageAppearance -> {
+                                val configLocale = LocalConfiguration.current.locales[0]
+                                val effectiveLanguage = storedLanguage
+                                    ?: AppLanguage.fromTag(configLocale.language)
+                                    ?: AppLanguage.English
                                 LanguageAppearanceScreen(
                                     themeMode = themeMode,
                                     isThemeTransitionRunning = revealState.isRunning || themeChangePending,
+                                    selectedLanguage = effectiveLanguage,
                                     onBack = { destination = RootDestination.Settings },
                                     onCycleTheme = { next, origin ->
                                         requestThemeChange(next, origin)
+                                    },
+                                    onSelectLanguage = { lang ->
+                                        scope.launch {
+                                            themePreferences.setLanguage(lang)
+                                            AppLocale.apply(lang)
+                                        }
                                     },
                                     modifier = pad,
                                 )

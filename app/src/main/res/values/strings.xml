@@ -162,7 +162,9 @@
 
     <string name="settings_language_appearance">Language &amp; appearance</string>
     <string name="settings_theme_toggle_content_description">Change theme</string>
-    <string name="settings_language_coming_soon">Language options will be available in a future update.</string>
+    <string name="settings_language_section">Language</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_spanish">Spanish</string>
 
     <string name="about_title">About</string>
     <string name="about_app_name">GridLab</string>

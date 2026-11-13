@@ -5,6 +5,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
+import com.gridlab.app.core.preferences.AppLanguage
 import com.gridlab.app.ui.theme.GridLabTheme
 import com.gridlab.app.ui.theme.GridLabThemeMode
 import com.gridlab.app.ui.theme.iconRes
@@ -46,15 +52,16 @@ private val ThemeIconEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
 private const val ThemeIconAnimMs = 520
 
 /**
- * Language & appearance settings. Theme is cycled from the top-bar icon
- * (Light → Dark → Night). Language controls will be added later.
+ * Language & appearance: theme icon in the top bar; language chips in the body.
  */
 @Composable
 fun LanguageAppearanceScreen(
     themeMode: GridLabThemeMode,
     isThemeTransitionRunning: Boolean,
+    selectedLanguage: AppLanguage,
     onBack: () -> Unit,
     onCycleTheme: (next: GridLabThemeMode, originInWindow: Offset) -> Unit,
+    onSelectLanguage: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = GridLabTheme.colors
@@ -145,18 +152,39 @@ fun LanguageAppearanceScreen(
             }
         }
 
-        // Placeholder body — language options will land here later.
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            contentAlignment = Alignment.TopStart,
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = stringResource(R.string.settings_language_coming_soon),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.textSecondary,
+                text = stringResource(R.string.settings_language_section),
+                style = MaterialTheme.typography.titleMedium,
+                color = colors.textPrimary,
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.surface)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = selectedLanguage == AppLanguage.English,
+                        onClick = { onSelectLanguage(AppLanguage.English) },
+                        label = { Text(stringResource(R.string.settings_language_english)) },
+                    )
+                    FilterChip(
+                        selected = selectedLanguage == AppLanguage.Spanish,
+                        onClick = { onSelectLanguage(AppLanguage.Spanish) },
+                        label = { Text(stringResource(R.string.settings_language_spanish)) },
+                    )
+                }
+            }
         }
     }
 }
