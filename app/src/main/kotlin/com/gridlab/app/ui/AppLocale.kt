@@ -4,7 +4,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.gridlab.app.core.preferences.AppLanguage
 
-/** Applies or clears the per-app locale via AppCompat. */
+/** Applies the per-app locale via AppCompat (requires AppCompatActivity + AppCompat theme). */
 object AppLocale {
     fun apply(language: AppLanguage?) {
         val locales = if (language == null) {
@@ -12,13 +12,10 @@ object AppLocale {
         } else {
             LocaleListCompat.forLanguageTags(language.tag)
         }
+        val current = AppCompatDelegate.getApplicationLocales()
+        if (current.toLanguageTags() == locales.toLanguageTags()) {
+            return
+        }
         AppCompatDelegate.setApplicationLocales(locales)
-    }
-
-    /** Effective app language from AppCompat locales, if one of the supported tags. */
-    fun currentAppLanguageOrNull(): AppLanguage? {
-        val tags = AppCompatDelegate.getApplicationLocales()
-        if (tags.isEmpty) return null
-        return AppLanguage.fromTag(tags[0]?.language)
     }
 }

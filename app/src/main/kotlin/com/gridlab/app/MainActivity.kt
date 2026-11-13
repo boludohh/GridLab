@@ -2,7 +2,7 @@ package com.gridlab.app
 
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -55,7 +55,7 @@ private val RevealEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
 private const val RevealDurationMs = 520
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var themePreferences: ThemePreferencesRepository
@@ -79,6 +79,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val storedMode by themePreferences.themeMode.collectAsStateWithLifecycle(initialValue = null)
             val storedLanguage by themePreferences.language.collectAsStateWithLifecycle(initialValue = null)
+            // Avoid treating the collectAsState initial null as "follow system" before DataStore loads.
+            var languageReady by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                themePreferences.language.collect { lang ->
+                    languageReady = true
+                    AppLocale.apply(lang)
+                }
+            }
             val systemDark = isSystemInDarkTheme()
             val resolvedMode = storedMode ?: if (systemDark) {
                 GridLabThemeMode.Dark
@@ -89,10 +97,6 @@ class MainActivity : ComponentActivity() {
             var themeMode by remember { mutableStateOf(resolvedMode) }
             LaunchedEffect(resolvedMode) {
                 themeMode = resolvedMode
-            }
-
-            LaunchedEffect(storedLanguage) {
-                AppLocale.apply(storedLanguage)
             }
 
             val revealState = remember { ThemeRevealState() }
