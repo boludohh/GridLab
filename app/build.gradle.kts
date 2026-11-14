@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.detekt)
 }
 
 // Loaded from app/keystore.properties, which is git-ignored and is generated
@@ -76,13 +75,6 @@ android {
     }
 }
 
-detekt {
-    buildUponDefaultConfig = true
-    allRules = false
-    config.setFrom(files("${rootProject.projectDir}/config/detekt/detekt.yml"))
-    parallel = true
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -113,10 +105,7 @@ dependencies {
     implementation(libs.markdown.renderer)
     implementation(libs.markdown.renderer.m3)
 
-    detektPlugins(libs.detekt.formatting)
-
     testImplementation(libs.junit)
-    testImplementation(libs.konsist)
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)

@@ -64,8 +64,6 @@ Se incluyen acá por completitud y documentación del repo.
 | Hilt Gradle Plugin | `com.google.dagger.hilt.android` | Apache License 2.0 |
 | Hilt Compiler (KSP) | `com.google.dagger:hilt-compiler` | Apache License 2.0 |
 | Room Compiler (KSP) | `androidx.room:room-compiler` | Apache License 2.0 |
-| Detekt + Detekt Formatting | `io.gitlab.arturbosch.detekt*` | Apache License 2.0 |
-| Konsist | `com.lemonappdev:konsist` | Apache License 2.0 |
 | AndroidX Compose UI Tooling (solo debug) | `androidx.compose.ui:ui-tooling` | Apache License 2.0 |
 | AndroidX Compose UI Test Manifest (solo debug) | `androidx.compose.ui:ui-test-manifest` | Apache License 2.0 |
 | JUnit 4 | `junit:junit` | **Eclipse Public License 1.0** |
