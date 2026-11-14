@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -78,6 +79,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.gridlab.app.R
 import com.gridlab.app.core.geometry.GridCalculator
+import com.gridlab.app.core.geometry.ReferenceImagePlacement
 import com.gridlab.app.core.geometry.GridLabelFormatter
 import com.gridlab.app.core.geometry.GridLayout
 import com.gridlab.app.core.geometry.ImageFilterMatrices
@@ -107,23 +109,51 @@ private data class PreviewInteraction(
     val onMeasureTap: (xPx: Float, yPx: Float, viewport: ViewportTransform) -> Unit,
 )
 
-private class FractionalCropShape(
-    private val left: Float,
-    private val top: Float,
-    private val right: Float,
-    private val bottom: Float,
+/**
+ * Clips to the same normalized source crop used by [com.gridlab.app.core.render.DocumentRenderer].
+ *
+ * [size] is the content box (Fit container). The outline is the destination rectangle of the
+ * cropped region after fit-in-content (scale/offset are applied via graphicsLayer on top).
+ */
+private class SourceCropFitShape(
+    private val sourceWidth: Int,
+    private val sourceHeight: Int,
+    private val cropLeft: Float,
+    private val cropTop: Float,
+    private val cropRight: Float,
+    private val cropBottom: Float,
 ) : Shape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,
         density: Density,
     ): Outline {
+        val crop = ReferenceImagePlacement.sourceCrop(
+            srcW = sourceWidth,
+            srcH = sourceHeight,
+            cropLeft = cropLeft.toDouble(),
+            cropTop = cropTop.toDouble(),
+            cropRight = cropRight.toDouble(),
+            cropBottom = cropBottom.toDouble(),
+        )
+        // Destination without user scale/offset (those are graphicsLayer); pxPerMm=1 because
+        // we work in content pixels and offsets are applied separately.
+        val dest = ReferenceImagePlacement.destinationRect(
+            contentW = size.width,
+            contentH = size.height,
+            cropWidthPx = crop.width,
+            cropHeightPx = crop.height,
+            scale = 1.0,
+            offsetXMm = 0.0,
+            offsetYMm = 0.0,
+            pxPerMm = 1.0,
+        )
         return Outline.Rectangle(
             Rect(
-                left = size.width * left,
-                top = size.height * top,
-                right = size.width * right,
-                bottom = size.height * bottom,
+                left = dest.left,
+                top = dest.top,
+                right = dest.right,
+                bottom = dest.bottom,
             ),
         )
     }
@@ -550,6 +580,11 @@ private fun ReferenceImageLayer(
     val colorFilter = ImageFilterMatrices.matrix(image.filter)?.let { coeffs ->
         ColorFilter.colorMatrix(ColorMatrix(coeffs))
     }
+    val sourceSize = remember(imagePath) {
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(imagePath, opts)
+        (opts.outWidth.coerceAtLeast(1)) to (opts.outHeight.coerceAtLeast(1))
+    }
     AsyncImage(
         model = File(imagePath),
         contentDescription = stringResource(R.string.image_content_description),
@@ -571,11 +606,13 @@ private fun ReferenceImageLayer(
                 alpha = image.opacity
                 transformOrigin = TransformOrigin.Center
                 if (image.hasCrop) {
-                    shape = FractionalCropShape(
-                        left = image.cropLeft,
-                        top = image.cropTop,
-                        right = image.cropRight,
-                        bottom = image.cropBottom,
+                    shape = SourceCropFitShape(
+                        sourceWidth = sourceSize.first,
+                        sourceHeight = sourceSize.second,
+                        cropLeft = image.cropLeft,
+                        cropTop = image.cropTop,
+                        cropRight = image.cropRight,
+                        cropBottom = image.cropBottom,
                     )
                     clip = true
                 }

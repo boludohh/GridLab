@@ -11,6 +11,7 @@ import android.graphics.Typeface
 import android.graphics.Rect
 import android.graphics.RectF
 import com.gridlab.app.core.geometry.ExportSizeCalculator
+import com.gridlab.app.core.geometry.ReferenceImagePlacement
 import com.gridlab.app.core.geometry.GridLabelFormatter
 import com.gridlab.app.core.geometry.ImageFilterMatrices
 import com.gridlab.app.core.geometry.GridCalculator
@@ -27,6 +28,11 @@ import javax.inject.Singleton
  */
 @Singleton
 class DocumentRenderer @Inject constructor() {
+
+    companion object {
+        /** PDF points per millimeter (72 pt/in ÷ 25.4 mm/in). */
+        private const val PDF_POINTS_PER_MM = 72.0 / 25.4
+    }
 
     /**
      * Renders [document] at [dpi]. [imageFile] is the resolved reference image file, or null.
@@ -126,9 +132,14 @@ class DocumentRenderer @Inject constructor() {
         val bitmap = renderToBitmap(document, dpi, imageFile)
         val pdf = PdfDocument()
         try {
-            val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, 1).create()
+            // Page size is physical paper in PDF points (1/72"), not bitmap pixels.
+            val paper = document.paper
+            val pageWidthPt = (paper.widthMm * PDF_POINTS_PER_MM).toInt().coerceAtLeast(1)
+            val pageHeightPt = (paper.heightMm * PDF_POINTS_PER_MM).toInt().coerceAtLeast(1)
+            val pageInfo = PdfDocument.PageInfo.Builder(pageWidthPt, pageHeightPt, 1).create()
             val page = pdf.startPage(pageInfo)
-            page.canvas.drawBitmap(bitmap, 0f, 0f, null)
+            val dest = Rect(0, 0, pageWidthPt, pageHeightPt)
+            page.canvas.drawBitmap(bitmap, null, dest, null)
             pdf.finishPage(page)
             pdf.writeTo(outputStream)
         } finally {
@@ -156,47 +167,55 @@ class DocumentRenderer @Inject constructor() {
         val srcW = boundsOptions.outWidth.coerceAtLeast(1)
         val srcH = boundsOptions.outHeight.coerceAtLeast(1)
 
-        val cropLeft = (srcW * image.cropLeft).toInt().coerceIn(0, srcW - 1)
-        val cropTop = (srcH * image.cropTop).toInt().coerceIn(0, srcH - 1)
-        val cropRight = (srcW * image.cropRight).toInt().coerceIn(cropLeft + 1, srcW)
-        val cropBottom = (srcH * image.cropBottom).toInt().coerceIn(cropTop + 1, srcH)
-        val cropW = (cropRight - cropLeft).coerceAtLeast(1)
-        val cropH = (cropBottom - cropTop).coerceAtLeast(1)
+        val crop = ReferenceImagePlacement.sourceCrop(
+            srcW = srcW,
+            srcH = srcH,
+            cropLeft = image.cropLeft,
+            cropTop = image.cropTop,
+            cropRight = image.cropRight,
+            cropBottom = image.cropBottom,
+        )
 
         val decodeOptions = BitmapFactory.Options().apply {
             inPreferredConfig = Bitmap.Config.RGB_565
             inJustDecodeBounds = false
-            inSampleSize = calculateInSampleSize(cropW, cropH, contentW.toInt(), contentH.toInt())
+            inSampleSize = calculateInSampleSize(
+                crop.width,
+                crop.height,
+                contentW.toInt(),
+                contentH.toInt(),
+            )
         }
         val decoded = BitmapFactory.decodeFile(file.absolutePath, decodeOptions) ?: return
         try {
             val sample = decodeOptions.inSampleSize.coerceAtLeast(1)
             val srcRect = Rect(
-                (cropLeft / sample).coerceIn(0, decoded.width),
-                (cropTop / sample).coerceIn(0, decoded.height),
-                (cropRight / sample).coerceIn(0, decoded.width),
-                (cropBottom / sample).coerceIn(0, decoded.height),
+                (crop.left / sample).coerceIn(0, decoded.width),
+                (crop.top / sample).coerceIn(0, decoded.height),
+                (crop.right / sample).coerceIn(0, decoded.width),
+                (crop.bottom / sample).coerceIn(0, decoded.height),
             )
             if (srcRect.width() <= 0 || srcRect.height() <= 0) return
 
-            val fit = minOf(
-                contentW / srcRect.width().toFloat(),
-                contentH / srcRect.height().toFloat(),
+            val destPx = ReferenceImagePlacement.destinationRect(
+                contentW = contentW,
+                contentH = contentH,
+                cropWidthPx = srcRect.width(),
+                cropHeightPx = srcRect.height(),
+                scale = image.scale,
+                offsetXMm = image.offsetXMm,
+                offsetYMm = image.offsetYMm,
+                pxPerMm = pxPerMm,
             )
-            val drawW = srcRect.width() * fit * image.scale.toFloat()
-            val drawH = srcRect.height() * fit * image.scale.toFloat()
-            val baseLeft = marginLeft + (contentW - srcRect.width() * fit) / 2f
-            val baseTop = marginTop + (contentH - srcRect.height() * fit) / 2f
-            val offsetXPx = (image.offsetXMm * pxPerMm).toFloat()
-            val offsetYPx = (image.offsetYMm * pxPerMm).toFloat()
-            val centerX = baseLeft + srcRect.width() * fit / 2f + offsetXPx
-            val centerY = baseTop + srcRect.height() * fit / 2f + offsetYPx
             val dst = RectF(
-                centerX - drawW / 2f,
-                centerY - drawH / 2f,
-                centerX + drawW / 2f,
-                centerY + drawH / 2f,
+                destPx.left + marginLeft,
+                destPx.top + marginTop,
+                destPx.right + marginLeft,
+                destPx.bottom + marginTop,
             )
+            val centerX = destPx.centerX + marginLeft
+            val centerY = destPx.centerY + marginTop
+
             val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
                 alpha = (image.opacity * 255).toInt().coerceIn(0, 255)
                 val coeffs = ImageFilterMatrices.matrix(image.filter)
@@ -213,94 +232,6 @@ class DocumentRenderer @Inject constructor() {
         } finally {
             if (!decoded.isRecycled) {
                 decoded.recycle()
-            }
-        }
-    }
-
-    private fun drawGrid(
-        canvas: Canvas,
-        document: Document,
-        marginLeft: Float,
-        marginTop: Float,
-        pxPerMm: Double,
-    ) {
-        val layout = GridCalculator.calculate(document.paper, document.grid)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = document.grid.lineStyle.colorArgb.toInt()
-            alpha = (document.grid.lineStyle.opacity * 255).toInt().coerceIn(0, 255)
-            strokeWidth = (document.grid.lineStyle.strokeWidthMm * pxPerMm).toFloat().coerceAtLeast(1f)
-            style = Paint.Style.STROKE
-        }
-        val contentH = (layout.printableHeightMm * pxPerMm).toFloat()
-        val contentW = (layout.printableWidthMm * pxPerMm).toFloat()
-        for (xMm in layout.verticalLineXsMm) {
-            val x = marginLeft + (xMm * pxPerMm).toFloat()
-            canvas.drawLine(x, marginTop, x, marginTop + contentH, paint)
-        }
-        for (yMm in layout.horizontalLineYsMm) {
-            val y = marginTop + (yMm * pxPerMm).toFloat()
-            canvas.drawLine(marginLeft, y, marginLeft + contentW, y, paint)
-        }
-        if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
-            val secondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = document.grid.secondaryLineStyle.colorArgb.toInt()
-                alpha = (document.grid.secondaryLineStyle.opacity * 255).toInt().coerceIn(0, 255)
-                strokeWidth = (document.grid.secondaryLineStyle.strokeWidthMm * pxPerMm)
-                    .toFloat()
-                    .coerceAtLeast(0.5f)
-                style = Paint.Style.STROKE
-            }
-            for (xMm in layout.secondaryVerticalXsMm) {
-                val x = marginLeft + (xMm * pxPerMm).toFloat()
-                canvas.drawLine(x, marginTop, x, marginTop + contentH, secondaryPaint)
-            }
-            for (yMm in layout.secondaryHorizontalYsMm) {
-                val y = marginTop + (yMm * pxPerMm).toFloat()
-                canvas.drawLine(marginLeft, y, marginLeft + contentW, y, secondaryPaint)
-            }
-        }
-    }
-
-    private fun drawGridLabels(
-        canvas: Canvas,
-        document: Document,
-        marginLeft: Float,
-        marginTop: Float,
-        pxPerMm: Double,
-    ) {
-        val layout = GridCalculator.calculate(document.paper, document.grid)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = document.grid.labelColorArgb.toInt()
-            textSize = (2.5 * pxPerMm).toFloat().coerceIn(8f, 48f)
-            typeface = Typeface.DEFAULT_BOLD
-            textAlign = Paint.Align.CENTER
-        }
-        val cellW = (layout.cellWidthMm * pxPerMm).toFloat()
-        val cellH = (layout.cellHeightMm * pxPerMm).toFloat()
-        for (c in 0 until document.grid.columns) {
-            val x = marginLeft + cellW * (c + 0.5f)
-            val y = marginTop - paint.textSize * 0.25f
-            if (y > paint.textSize * 0.5f) {
-                canvas.drawText(GridLabelFormatter.columnLabel(c), x, y, paint)
-            } else {
-                canvas.drawText(
-                    GridLabelFormatter.columnLabel(c),
-                    x,
-                    marginTop + paint.textSize,
-                    paint,
-                )
-            }
-        }
-        paint.textAlign = Paint.Align.RIGHT
-        for (r in 0 until document.grid.rows) {
-            val y = marginTop + cellH * (r + 0.5f) + paint.textSize * 0.35f
-            val x = marginLeft - 2f
-            if (x > 4f) {
-                canvas.drawText(GridLabelFormatter.rowLabel(r), x, y, paint)
-            } else {
-                paint.textAlign = Paint.Align.LEFT
-                canvas.drawText(GridLabelFormatter.rowLabel(r), marginLeft + 2f, y, paint)
-                paint.textAlign = Paint.Align.RIGHT
             }
         }
     }

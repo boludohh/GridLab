@@ -1,5 +1,3 @@
-@file:Suppress("ImportOrdering")
-
 package com.gridlab.app.core.data.storage
 
 import android.content.Context
@@ -28,10 +26,15 @@ class ImageStorage @Inject constructor(
     suspend fun copyFromUri(documentId: String, uri: Uri): String = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "projects/" + documentId).apply { mkdirs() }
         val extension = guessExtension(uri)
-        val dest = File(dir, "original_" + extension)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            dest.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw IOException("Cannot open image uri: " + uri)
+        val dest = File(dir, "ref_" + UUID.randomUUID().toString() + "_" + extension)
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                dest.outputStream().use { output -> input.copyTo(output) }
+            } ?: throw IOException("Cannot open image uri: " + uri)
+        } catch (e: Exception) {
+            if (dest.exists()) dest.delete()
+            throw e
+        }
         "projects/" + documentId + "/" + dest.name
     }
 

@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 data class GridConfigUiState(
@@ -81,6 +83,9 @@ class GridConfigViewModel @Inject constructor(
     val uiState: StateFlow<GridConfigUiState> = _uiState.asStateFlow()
 
     private var autosaveJob: Job? = null
+    private val saveMutex = Mutex()
+    /** Monotonic revision of document data; used so a stale save cannot clear isDirty. */
+    private var documentRevision: Long = 0L
 
     fun openDocument(documentId: String) {
         if (documentId.isBlank()) return
@@ -109,6 +114,7 @@ class GridConfigViewModel @Inject constructor(
         val state = _uiState.value
         if (name.isEmpty() || state.documentId.isEmpty()) return
         _uiState.update {
+            documentRevision++
             it.copy(documentName = name, lastSaveSucceeded = null, isDirty = true)
         }
         scheduleAutosave()
@@ -167,9 +173,6 @@ class GridConfigViewModel @Inject constructor(
             runCatching {
                 val previousPath = state.referenceImage?.relativePath
                 val relative = imageStorage.copyFromUri(state.documentId, uri)
-                if (previousPath != null && previousPath != relative) {
-                    imageStorage.deleteRelativeFile(previousPath)
-                }
                 val ref = ReferenceImage.withPath(relative)
                 val updated = Document(
                     id = state.documentId,
@@ -178,7 +181,11 @@ class GridConfigViewModel @Inject constructor(
                     grid = state.grid,
                     referenceImage = ref,
                 )
+                // Persist first; only then delete the previous file.
                 projectRepository.saveDocument(updated)
+                if (previousPath != null && previousPath != relative) {
+                    imageStorage.deleteRelativeFile(previousPath)
+                }
                 applyDocument(updated)
             }.onSuccess {
                 _uiState.update { it.copy(isImporting = false, isDirty = false) }
@@ -194,7 +201,6 @@ class GridConfigViewModel @Inject constructor(
         viewModelScope.launch {
             val path = state.referenceImage.relativePath
             runCatching {
-                imageStorage.deleteRelativeFile(path)
                 val updated = Document(
                     id = state.documentId,
                     name = state.documentName,
@@ -202,7 +208,9 @@ class GridConfigViewModel @Inject constructor(
                     grid = state.grid,
                     referenceImage = null,
                 )
+                // Clear reference in DB first; delete file only after success.
                 projectRepository.saveDocument(updated)
+                imageStorage.deleteRelativeFile(path)
                 applyDocument(updated)
             }
         }
@@ -218,6 +226,11 @@ class GridConfigViewModel @Inject constructor(
         viewModelScope.launch { persistIfDirty(showStatus = false) }
     }
 
+    private fun markDocumentChanged() {
+        documentRevision++
+        _uiState.update { it.copy(isDirty = true, lastSaveSucceeded = null) }
+    }
+
     private fun scheduleAutosave() {
         autosaveJob?.cancel()
         autosaveJob = viewModelScope.launch {
@@ -226,37 +239,45 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    private suspend fun persistIfDirty(showStatus: Boolean) {
+    private suspend fun persistIfDirty(showStatus: Boolean): Boolean {
         val state = _uiState.value
-        if (!state.isDirty || state.documentId.isEmpty()) return
+        if (!state.isDirty || state.documentId.isEmpty()) return true
+        val revisionAtStart = documentRevision
+        val snapshot = Document(
+            id = state.documentId,
+            name = state.documentName,
+            paper = state.paper,
+            grid = state.grid,
+            referenceImage = state.referenceImage,
+        )
         if (showStatus) {
             _uiState.update { it.copy(isSaving = true, lastSaveSucceeded = null) }
         }
-        runCatching {
-            projectRepository.saveDocument(
-                Document(
-                    id = state.documentId,
-                    name = state.documentName,
-                    paper = state.paper,
-                    grid = state.grid,
-                    referenceImage = state.referenceImage,
-                ),
+        return saveMutex.withLock {
+            runCatching {
+                projectRepository.saveDocument(snapshot)
+            }.fold(
+                onSuccess = {
+                    _uiState.update { current ->
+                        val stillSameRevision = documentRevision == revisionAtStart
+                        current.copy(
+                            isDirty = if (stillSameRevision) false else current.isDirty,
+                            isSaving = false,
+                            lastSaveSucceeded = if (showStatus) true else current.lastSaveSucceeded,
+                        )
+                    }
+                    true
+                },
+                onFailure = {
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            lastSaveSucceeded = if (showStatus) false else it.lastSaveSucceeded,
+                        )
+                    }
+                    false
+                },
             )
-        }.onSuccess {
-            _uiState.update {
-                it.copy(
-                    isDirty = false,
-                    isSaving = false,
-                    lastSaveSucceeded = if (showStatus) true else it.lastSaveSucceeded,
-                )
-            }
-        }.onFailure {
-            _uiState.update {
-                it.copy(
-                    isSaving = false,
-                    lastSaveSucceeded = if (showStatus) false else it.lastSaveSucceeded,
-                )
-            }
         }
     }
 
@@ -352,6 +373,7 @@ class GridConfigViewModel @Inject constructor(
     }
 
     private fun updatePaper(transform: Paper.() -> Paper) {
+        documentRevision++
         _uiState.update { state ->
             state.copy(
                 paper = state.paper.transform(),
@@ -487,6 +509,7 @@ class GridConfigViewModel @Inject constructor(
     }
 
     private fun updateGrid(transform: Grid.() -> Grid) {
+        documentRevision++
         _uiState.update { state ->
             state.copy(
                 grid = state.grid.transform(),
@@ -498,6 +521,7 @@ class GridConfigViewModel @Inject constructor(
     }
 
     private fun updateImage(transform: ReferenceImage.() -> ReferenceImage) {
+        documentRevision++
         _uiState.update { state ->
             val current = state.referenceImage ?: return@update state
             state.copy(
@@ -551,30 +575,39 @@ class GridConfigViewModel @Inject constructor(
             }
             runCatching {
                 withContext(Dispatchers.IO) {
-                    flushPendingSaveSuspend()
+                    val saved = flushPendingSaveSuspend()
+                    if (!saved) {
+                        error("SAVE_FAILED")
+                    }
+                    // Snapshot after flush so export matches persisted latest state.
+                    val latest = _uiState.value
                     val document = Document(
-                        id = state.documentId,
-                        name = state.documentName,
-                        paper = state.paper,
-                        grid = state.grid,
-                        referenceImage = state.referenceImage,
+                        id = latest.documentId,
+                        name = latest.documentName,
+                        paper = latest.paper,
+                        grid = latest.grid,
+                        referenceImage = latest.referenceImage,
                     )
-                    val imageFile = state.referenceImage?.relativePath?.let { relative ->
+                    val imageFile = latest.referenceImage?.relativePath?.let { relative ->
                         val file = imageStorage.resolveAbsoluteFile(relative)
                         if (file.isFile) file else null
                     }
-                    val (outputStream, location) = exportStorage.openOutputStream(format)
-                    outputStream.use { stream ->
+                    val sink = exportStorage.openSink(format)
+                    try {
                         when (format) {
                             ExportFormat.Jpeg ->
-                                documentRenderer.exportJpeg(document, dpi, imageFile, stream)
+                                documentRenderer.exportJpeg(document, dpi, imageFile, sink.stream)
                             ExportFormat.Png ->
-                                documentRenderer.exportPng(document, dpi, imageFile, stream)
+                                documentRenderer.exportPng(document, dpi, imageFile, sink.stream)
                             ExportFormat.Pdf ->
-                                documentRenderer.exportPdf(document, dpi, imageFile, stream)
+                                documentRenderer.exportPdf(document, dpi, imageFile, sink.stream)
                         }
+                        sink.commit()
+                    } catch (e: Exception) {
+                        sink.abort()
+                        throw e
                     }
-                    location
+                    sink.displayPath
                 }
             }.onSuccess { location ->
                 _uiState.update {
@@ -597,9 +630,9 @@ class GridConfigViewModel @Inject constructor(
         }
     }
 
-    private suspend fun flushPendingSaveSuspend() {
+    private suspend fun flushPendingSaveSuspend(): Boolean {
         autosaveJob?.cancel()
-        persistIfDirty(showStatus = false)
+        return persistIfDirty(showStatus = false)
     }
 
     companion object {

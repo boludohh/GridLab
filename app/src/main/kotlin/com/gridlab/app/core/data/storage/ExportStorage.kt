@@ -6,30 +6,58 @@ import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import com.gridlab.app.core.model.ExportFormat
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.OutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class ExportFormat {
+    Jpeg,
+    Png,
+    Pdf,
+}
+
 /**
- * Resolves export destinations and manages file creation for exported documents.
- *
- * - API 29+ (Android 10+): Uses MediaStore with RELATIVE_PATH for automatic indexing
- *   and folder creation. No permission required.
- * - API 27-28 (Android 8.1-9): Uses direct File access with mkdirs() for folder
- *   recreation. Requires WRITE_EXTERNAL_STORAGE permission (requested at runtime).
- *
- * File naming: dd-MM-yy-HH-mm-GridLab.ext (date/time from system clock at export moment).
- *
- * Images (JPG/PNG) → Pictures/GridLab (indexed in gallery)
- * PDF → Documents/GridLab (indexed in file managers)
+ * Destination for a single export write. Call [commit] only after a full successful write;
+ * call [abort] on any failure so partial/pending entries are not published.
+ */
+class ExportSink internal constructor(
+    val stream: OutputStream,
+    val displayPath: String,
+    private val onCommit: () -> Unit,
+    private val onAbort: () -> Unit,
+) {
+    private var finished = false
+
+    fun commit() {
+        if (finished) return
+        finished = true
+        try {
+            stream.flush()
+            stream.close()
+        } finally {
+            onCommit()
+        }
+    }
+
+    fun abort() {
+        if (finished) return
+        finished = true
+        try {
+            runCatching { stream.close() }
+        } finally {
+            onAbort()
+        }
+    }
+}
+
+/**
+ * Creates public export files under Pictures/GridLab or Documents/GridLab.
  */
 @Singleton
 class ExportStorage @Inject constructor(
@@ -37,31 +65,34 @@ class ExportStorage @Inject constructor(
 ) {
 
     /**
-     * Opens an OutputStream for writing the exported file. Returns the stream and
-     * a human-readable location description (e.g., "Pictures/GridLab/09-11-26-23-40-GridLab.jpg").
-     *
-     * Caller is responsible for closing the stream.
+     * Opens a sink for [format]. Write fully to [ExportSink.stream], then [ExportSink.commit].
+     * On any failure, call [ExportSink.abort] instead of commit.
      */
-    suspend fun openOutputStream(
-        format: ExportFormat,
-    ): Pair<OutputStream, String> = withContext(Dispatchers.IO) {
+    fun openSink(format: ExportFormat): ExportSink {
         val fileName = generateFileName(format)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            openMediaStoreStream(format, fileName)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            openMediaStoreSink(format, fileName)
         } else {
-            openFileStream(format, fileName)
+            openLegacySink(format, fileName)
         }
     }
 
-    /**
-     * Checks if the app needs to request storage permission (only on API 27-28).
-     */
+    /** @deprecated Prefer [openSink] with explicit commit/abort. */
+    fun openOutputStream(format: ExportFormat): Pair<OutputStream, String> {
+        val sink = openSink(format)
+        // Legacy API: closing stream commits — kept for any remaining callers.
+        return object : OutputStream() {
+            override fun write(b: Int) = sink.stream.write(b)
+            override fun write(b: ByteArray?) = sink.stream.write(b)
+            override fun write(b: ByteArray?, off: Int, len: Int) = sink.stream.write(b, off, len)
+            override fun flush() = sink.stream.flush()
+            override fun close() = sink.commit()
+        } to sink.displayPath
+    }
+
     fun requiresStoragePermission(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
-    /**
-     * Checks if the app has storage permission (always true on API 29+).
-     */
     fun hasStoragePermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return true
         return appContext.checkSelfPermission(
@@ -80,30 +111,20 @@ class ExportStorage @Inject constructor(
         }
         var baseName = "$timestamp-GridLab"
         var counter = 1
-        // Ensure uniqueness by appending counter if file exists
-        while (fileNameExists(baseName, extension)) {
+        while (fileNameExists(baseName, extension, format)) {
             baseName = "$timestamp-GridLab-$counter"
             counter++
         }
         return "$baseName.$extension"
     }
 
-    private fun fileNameExists(baseName: String, extension: String): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // MediaStore handles uniqueness automatically; assume no collision
-            return false
-        } else {
-            val dir = getLegacyDirectory(
-                if (extension == "pdf") ExportFormat.Pdf else ExportFormat.Jpeg,
-            )
-            return File(dir, "$baseName.$extension").exists()
-        }
+    private fun fileNameExists(baseName: String, extension: String, format: ExportFormat): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return false
+        val dir = getLegacyDirectory(format)
+        return File(dir, "$baseName.$extension").exists()
     }
 
-    private fun openMediaStoreStream(
-        format: ExportFormat,
-        fileName: String,
-    ): Pair<OutputStream, String> {
+    private fun openMediaStoreSink(format: ExportFormat, fileName: String): ExportSink {
         val resolver = appContext.contentResolver
         val (collection, mimeType, relativePath) = when (format) {
             ExportFormat.Jpeg -> Triple(
@@ -129,26 +150,52 @@ class ExportStorage @Inject constructor(
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val uri = resolver.insert(collection, values)
-            ?: throw IllegalStateException("Failed to insert MediaStore entry")
+            ?: throw IOException("MediaStore insert failed for $fileName")
         val stream = resolver.openOutputStream(uri)
-            ?: throw IllegalStateException("Failed to open MediaStore stream")
-        // Mark as not pending after successful write (caller closes stream first)
-        return StreamWithFinalizer(stream, uri, resolver) to "$relativePath/$fileName"
+        if (stream == null) {
+            resolver.delete(uri, null, null)
+            throw IOException("Cannot open MediaStore output stream for $uri")
+        }
+        val display = "$relativePath/$fileName"
+        return ExportSink(
+            stream = stream,
+            displayPath = display,
+            onCommit = {
+                val done = ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }
+                resolver.update(uri, done, null, null)
+            },
+            onAbort = {
+                runCatching { resolver.delete(uri, null, null) }
+            },
+        )
     }
 
-    private fun openFileStream(
-        format: ExportFormat,
-        fileName: String,
-    ): Pair<OutputStream, String> {
+    private fun openLegacySink(format: ExportFormat, fileName: String): ExportSink {
         val dir = getLegacyDirectory(format)
-        dir.mkdirs() // Recreate if user deleted it
+        dir.mkdirs()
         val file = File(dir, fileName)
         val stream = FileOutputStream(file)
         val relativePath = when (format) {
             ExportFormat.Jpeg, ExportFormat.Png -> "Pictures/GridLab"
             ExportFormat.Pdf -> "Documents/GridLab"
         }
-        return StreamWithMediaScan(stream, file.absolutePath, appContext) to "$relativePath/$fileName"
+        return ExportSink(
+            stream = stream,
+            displayPath = "$relativePath/$fileName",
+            onCommit = {
+                MediaScannerConnection.scanFile(
+                    appContext,
+                    arrayOf(file.absolutePath),
+                    null,
+                    null,
+                )
+            },
+            onAbort = {
+                runCatching { if (file.exists()) file.delete() }
+            },
+        )
     }
 
     private fun getLegacyDirectory(format: ExportFormat): File {
@@ -159,49 +206,5 @@ class ExportStorage @Inject constructor(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
         }
         return File(baseDir, "GridLab")
-    }
-
-    /**
-     * Wrapper that marks MediaStore entry as not pending when closed.
-     */
-    private class StreamWithFinalizer(
-        private val delegate: OutputStream,
-        private val uri: android.net.Uri,
-        private val resolver: android.content.ContentResolver,
-    ) : OutputStream() {
-        override fun write(b: Int) = delegate.write(b)
-        override fun write(b: ByteArray?) = delegate.write(b)
-        override fun write(b: ByteArray?, off: Int, len: Int) = delegate.write(b, off, len)
-        override fun flush() = delegate.flush()
-        override fun close() {
-            delegate.close()
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.IS_PENDING, 0)
-            }
-            resolver.update(uri, values, null, null)
-        }
-    }
-
-    /**
-     * Wrapper that triggers media scan after close (for API 27-28 gallery indexing).
-     */
-    private class StreamWithMediaScan(
-        private val delegate: OutputStream,
-        private val filePath: String,
-        private val context: Context,
-    ) : OutputStream() {
-        override fun write(b: Int) = delegate.write(b)
-        override fun write(b: ByteArray?) = delegate.write(b)
-        override fun write(b: ByteArray?, off: Int, len: Int) = delegate.write(b, off, len)
-        override fun flush() = delegate.flush()
-        override fun close() {
-            delegate.close()
-            MediaScannerConnection.scanFile(
-                context,
-                arrayOf(filePath),
-                null,
-                null,
-            )
-        }
     }
 }
