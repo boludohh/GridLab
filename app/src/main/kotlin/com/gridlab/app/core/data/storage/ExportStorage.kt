@@ -1,5 +1,6 @@
 package com.gridlab.app.core.data.storage
 
+import com.gridlab.app.core.model.ExportFormat
 import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
@@ -15,12 +16,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
-
-enum class ExportFormat {
-    Jpeg,
-    Png,
-    Pdf,
-}
 
 /**
  * Destination for a single export write. Call [commit] only after a full successful write;

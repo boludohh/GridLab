@@ -170,10 +170,10 @@ class DocumentRenderer @Inject constructor() {
         val crop = ReferenceImagePlacement.sourceCrop(
             srcW = srcW,
             srcH = srcH,
-            cropLeft = image.cropLeft,
-            cropTop = image.cropTop,
-            cropRight = image.cropRight,
-            cropBottom = image.cropBottom,
+            cropLeft = image.cropLeft.toDouble(),
+            cropTop = image.cropTop.toDouble(),
+            cropRight = image.cropRight.toDouble(),
+            cropBottom = image.cropBottom.toDouble(),
         )
 
         val decodeOptions = BitmapFactory.Options().apply {
@@ -232,6 +232,95 @@ class DocumentRenderer @Inject constructor() {
         } finally {
             if (!decoded.isRecycled) {
                 decoded.recycle()
+            }
+        }
+    }
+
+    private fun drawGrid(
+        canvas: Canvas,
+        document: Document,
+        marginLeft: Float,
+        marginTop: Float,
+        pxPerMm: Double,
+    ) {
+        val layout = GridCalculator.calculate(document.paper, document.grid)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = document.grid.lineStyle.colorArgb.toInt()
+            alpha = (document.grid.lineStyle.opacity * 255).toInt().coerceIn(0, 255)
+            strokeWidth = (document.grid.lineStyle.strokeWidthMm * pxPerMm).toFloat().coerceAtLeast(1f)
+            style = Paint.Style.STROKE
+        }
+        val contentH = (layout.printableHeightMm * pxPerMm).toFloat()
+        val contentW = (layout.printableWidthMm * pxPerMm).toFloat()
+        for (xMm in layout.verticalLineXsMm) {
+            val x = marginLeft + (xMm * pxPerMm).toFloat()
+            canvas.drawLine(x, marginTop, x, marginTop + contentH, paint)
+        }
+        for (yMm in layout.horizontalLineYsMm) {
+            val y = marginTop + (yMm * pxPerMm).toFloat()
+            canvas.drawLine(marginLeft, y, marginLeft + contentW, y, paint)
+        }
+        if (layout.secondaryVerticalXsMm.isNotEmpty() || layout.secondaryHorizontalYsMm.isNotEmpty()) {
+            val secondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = document.grid.secondaryLineStyle.colorArgb.toInt()
+                alpha = (document.grid.secondaryLineStyle.opacity * 255).toInt().coerceIn(0, 255)
+                strokeWidth = (document.grid.secondaryLineStyle.strokeWidthMm * pxPerMm)
+                    .toFloat()
+                    .coerceAtLeast(0.5f)
+                style = Paint.Style.STROKE
+            }
+            for (xMm in layout.secondaryVerticalXsMm) {
+                val x = marginLeft + (xMm * pxPerMm).toFloat()
+                canvas.drawLine(x, marginTop, x, marginTop + contentH, secondaryPaint)
+            }
+            for (yMm in layout.secondaryHorizontalYsMm) {
+                val y = marginTop + (yMm * pxPerMm).toFloat()
+                canvas.drawLine(marginLeft, y, marginLeft + contentW, y, secondaryPaint)
+            }
+        }
+    }
+
+
+    private fun drawGridLabels(
+        canvas: Canvas,
+        document: Document,
+        marginLeft: Float,
+        marginTop: Float,
+        pxPerMm: Double,
+    ) {
+        val layout = GridCalculator.calculate(document.paper, document.grid)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = document.grid.labelColorArgb.toInt()
+            textSize = (2.5 * pxPerMm).toFloat().coerceIn(8f, 48f)
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+        }
+        val cellW = (layout.cellWidthMm * pxPerMm).toFloat()
+        val cellH = (layout.cellHeightMm * pxPerMm).toFloat()
+        for (c in 0 until document.grid.columns) {
+            val x = marginLeft + cellW * (c + 0.5f)
+            val y = marginTop - paint.textSize * 0.25f
+            if (y > paint.textSize * 0.5f) {
+                canvas.drawText(GridLabelFormatter.columnLabel(c), x, y, paint)
+            } else {
+                canvas.drawText(
+                    GridLabelFormatter.columnLabel(c),
+                    x,
+                    marginTop + paint.textSize,
+                    paint,
+                )
+            }
+        }
+        paint.textAlign = Paint.Align.RIGHT
+        for (r in 0 until document.grid.rows) {
+            val y = marginTop + cellH * (r + 0.5f) + paint.textSize * 0.35f
+            val x = marginLeft - 2f
+            if (x > 4f) {
+                canvas.drawText(GridLabelFormatter.rowLabel(r), x, y, paint)
+            } else {
+                paint.textAlign = Paint.Align.LEFT
+                canvas.drawText(GridLabelFormatter.rowLabel(r), marginLeft + 2f, y, paint)
+                paint.textAlign = Paint.Align.RIGHT
             }
         }
     }
