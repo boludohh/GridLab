@@ -7,10 +7,10 @@ import com.gridlab.app.core.model.Document
 import com.gridlab.app.core.model.Grid
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.ReferenceImage
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Singleton
 class ProjectRepositoryImpl @Inject constructor(
@@ -24,13 +24,17 @@ class ProjectRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDocument(id: String): Document? =
-        projectDao.getById(id)?.toDomain()
+        projectDao.getById(id)?.toDomainOrNull()
 
     override suspend fun getLatestDocument(): Document? =
-        projectDao.getLatest()?.toDomain()
+        projectDao.getLatest()?.toDomainOrNull()
 
+    /**
+     * Returns every document that can be decoded.
+     * A single malformed JSON row is skipped so the rest of the list still loads.
+     */
     override suspend fun listDocuments(): List<Document> =
-        projectDao.getAll().map { it.toDomain() }
+        projectDao.getAll().mapNotNull { entity -> entity.toDomainOrNull() }
 
     override suspend fun saveDocument(document: Document) {
         projectDao.upsert(document.toEntity())
@@ -40,6 +44,13 @@ class ProjectRepositoryImpl @Inject constructor(
         projectDao.deleteById(id)
         imageStorage.deleteProjectDir(id)
     }
+
+    /**
+     * Decodes entity fields; returns null on any serialization/validation failure
+     * so callers can isolate bad rows without failing the whole query.
+     */
+    private fun DocumentEntity.toDomainOrNull(): Document? =
+        runCatching { toDomain() }.getOrNull()
 
     private fun DocumentEntity.toDomain(): Document {
         val paper = json.decodeFromString<Paper>(paperJson)

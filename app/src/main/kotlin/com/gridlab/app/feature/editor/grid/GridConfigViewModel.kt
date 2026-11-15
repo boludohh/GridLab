@@ -620,11 +620,12 @@ class GridConfigViewModel @Inject constructor(
                         maxSafeExportDpi = safeDpi,
                     )
                 }
-            }.onFailure {
+            }.onFailure { error ->
+                val code = if (error.message == "SAVE_FAILED") "SAVE_FAILED" else "FAILED"
                 _uiState.update {
                     it.copy(
                         isExporting = false,
-                        exportMessage = "FAILED",
+                        exportMessage = code,
                         maxSafeExportDpi = safeDpi,
                     )
                 }

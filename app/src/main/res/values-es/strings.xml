@@ -84,6 +84,7 @@
     <string name="export_dpi_label_unsafe">%1$d DPI (alto)</string>
     <string name="export_success">Exportación lista</string>
     <string name="export_failed">Error al exportar</string>
+    <string name="export_save_failed">No se pudo guardar el proyecto antes de exportar. Corrige el error de guardado e inténtalo de nuevo.</string>
     <string name="export_dpi_too_high">%1$d DPI requiere demasiada memoria. El máximo seguro es %2$d DPI.</string>
     <string name="export_use_safe_dpi">Exportar a %1$d DPI</string>
     <string name="export_permission_required">Se necesita permiso de almacenamiento para exportar en esta versión de Android</string>
@@ -128,7 +129,6 @@
     <string name="measure_color_label">Color</string>
     <string name="color_picker_apply">Aplicar</string>
     <string name="color_picker_cancel">Cancelar</string>
-
     <string name="crop_active">Recorte activo</string>
     <string name="crop_bottom">Abajo</string>
     <string name="crop_clear">Quitar recorte</string>

@@ -137,6 +137,7 @@
     <string name="export_in_progress">Exporting…</string>
     <string name="export_success">Exported to %1$s</string>
     <string name="export_failed">Export failed</string>
+    <string name="export_save_failed">Could not save the project before export. Fix any save errors and try again.</string>
     <string name="export_dpi_too_high">%1$d DPI needs too much memory. Max safe is %2$d DPI.</string>
     <string name="export_use_safe_dpi">Export at %1$d DPI</string>
     <string name="export_permission_required">Storage permission required for export on this Android version</string>
@@ -157,15 +158,12 @@
     <string name="settings_title">Settings</string>
     <string name="settings_back_content_description">Back</string>
     <string name="settings_open_source_licenses">Open-source licenses</string>
-
     <string name="settings_about">About GridLab</string>
-
     <string name="settings_language_appearance">Language &amp; appearance</string>
     <string name="settings_theme_toggle_content_description">Change theme</string>
     <string name="settings_language_section">Language</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_spanish">Spanish</string>
-
     <string name="about_title">About</string>
     <string name="about_app_name">GridLab</string>
     <string name="about_version_fallback">1.0.0</string>
@@ -175,19 +173,15 @@
     <string name="about_instagram">Instagram</string>
     <string name="about_tiktok">TikTok</string>
     <string name="about_source_code">Source code</string>
-    <string name="about_releases">Releases</string>
-    
+    <string name="about_releases">Releases</string>    
     <string name="about_url_github_profile" translatable="false">https://github.com/boludohh</string>
     <string name="about_url_github_repo" translatable="false">https://github.com/boludohh/GridLab</string>
     <string name="about_url_github_releases" translatable="false">https://github.com/boludohh/GridLab/releases</string>
     <string name="about_url_github_avatar" translatable="false">https://avatars.githubusercontent.com/u/306046345?v=4</string>
     <string name="about_url_instagram" translatable="false">https://www.instagram.com/lautaro.acosta.20</string>
     <string name="about_url_tiktok" translatable="false">https://www.tiktok.com/@boludohh</string>
-
     <string name="about_distribution_note">Distributed via GitHub Releases, OpenAPK and Orion Store.</string>
-
     <string name="settings_licenses_load_error">Could not load license text.</string>
-
     <string name="paper_color_label">Color</string>
     <string name="grid_secondary_color_label">Color</string>
     <string name="grid_label_color_label">Color</string>

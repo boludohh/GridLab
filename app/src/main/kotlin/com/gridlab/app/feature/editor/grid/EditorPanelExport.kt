@@ -218,5 +218,12 @@ private fun ExportFormatSection(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        "SAVE_FAILED" -> {
+            Text(
+                text = stringResource(R.string.export_save_failed),
+                color = colors.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
