@@ -1,6 +1,8 @@
 package com.gridlab.app.feature.main
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
+import com.gridlab.app.R
 import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
 import com.gridlab.app.core.data.storage.ImageStorage
@@ -24,7 +26,7 @@ data class MainUiState(
     val projects: List<ProjectRowUi> = emptyList(),
     val isLoading: Boolean = true,
     val isWorking: Boolean = false,
-    val errorMessage: String? = null,
+    @StringRes val errorMessageRes: Int? = null,
     val isSelectionMode: Boolean = false,
     val selectedIds: Set<String> = emptySet(),
 )
@@ -44,7 +46,7 @@ class MainViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessageRes = null) }
             runCatching { projectRepository.listDocuments() }
                 .onSuccess { list ->
                     val rows = list.map { doc ->
@@ -64,7 +66,7 @@ class MainViewModel @Inject constructor(
                 }
                 .onFailure {
                     _uiState.update {
-                        it.copy(isLoading = false, errorMessage = "Could not load projects")
+                        it.copy(isLoading = false, errorMessageRes = R.string.projects_error_load)
                     }
                 }
         }
@@ -73,7 +75,7 @@ class MainViewModel @Inject constructor(
     fun createProject(onCreated: (String) -> Unit) {
         if (_uiState.value.isWorking) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isWorking = true, errorMessage = null) }
+            _uiState.update { it.copy(isWorking = true, errorMessageRes = null) }
             val id = UUID.randomUUID().toString()
             val doc = Document.newDefault(id = id, name = "Project " + id.take(8))
             runCatching {
@@ -85,7 +87,7 @@ class MainViewModel @Inject constructor(
                 onCreated(newId)
             }.onFailure {
                 _uiState.update {
-                    it.copy(isWorking = false, errorMessage = "Could not create project")
+                    it.copy(isWorking = false, errorMessageRes = R.string.projects_error_create)
                 }
             }
         }
@@ -95,7 +97,7 @@ class MainViewModel @Inject constructor(
         val name = newName.trim()
         if (name.isEmpty() || _uiState.value.isWorking) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isWorking = true, errorMessage = null) }
+            _uiState.update { it.copy(isWorking = true, errorMessageRes = null) }
             runCatching {
                 val existing = projectRepository.getDocument(id) ?: return@runCatching
                 projectRepository.saveDocument(existing.copy(name = name))
@@ -104,7 +106,7 @@ class MainViewModel @Inject constructor(
                 refresh()
             }.onFailure {
                 _uiState.update {
-                    it.copy(isWorking = false, errorMessage = "Could not rename project")
+                    it.copy(isWorking = false, errorMessageRes = R.string.projects_error_rename)
                 }
             }
         }
@@ -177,7 +179,7 @@ class MainViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            _uiState.update { it.copy(isWorking = true, errorMessage = null) }
+            _uiState.update { it.copy(isWorking = true, errorMessageRes = null) }
             runCatching {
                 ids.forEach { id -> projectRepository.deleteDocument(id) }
             }.onSuccess {
@@ -193,7 +195,7 @@ class MainViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isWorking = false,
-                        errorMessage = "Could not delete projects",
+                        errorMessageRes = R.string.projects_error_delete,
                         isSelectionMode = false,
                         selectedIds = emptySet(),
                     )

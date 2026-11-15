@@ -1,10 +1,8 @@
 package com.gridlab.app
 
-import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -60,21 +58,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var themePreferences: ThemePreferencesRepository
 
-    private val storagePermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { _ ->
-        // Permission result handled; no action needed here
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                storagePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }
         configureEdgeToEdge()
         setContent {
             val storedMode by themePreferences.themeMode.collectAsStateWithLifecycle(initialValue = null)

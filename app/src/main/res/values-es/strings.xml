@@ -73,6 +73,10 @@
     <string name="editor_tool_export_label">Exportar</string>
     <string name="projects_title">Proyectos</string>
     <string name="projects_empty">Aún no hay proyectos</string>
+    <string name="projects_error_load">No se pudieron cargar los proyectos</string>
+    <string name="projects_error_create">No se pudo crear el proyecto</string>
+    <string name="projects_error_rename">No se pudo renombrar el proyecto</string>
+    <string name="projects_error_delete">No se pudieron eliminar los proyectos</string>
     <string name="projects_create">Nuevo proyecto</string>
     <string name="projects_name_label">Nombre</string>
     <string name="projects_delete">Eliminar</string>

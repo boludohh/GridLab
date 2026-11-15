@@ -104,6 +104,10 @@
     <string name="projects_subtitle">Create a project, set the grid, add a reference image, then export.</string>
     <string name="projects_create">New project</string>
     <string name="projects_empty">No projects yet</string>
+    <string name="projects_error_load">Could not load projects</string>
+    <string name="projects_error_create">Could not create project</string>
+    <string name="projects_error_rename">Could not rename project</string>
+    <string name="projects_error_delete">Could not delete projects</string>
     <string name="projects_rename">Rename</string>
     <string name="projects_delete">Delete</string>
     <string name="projects_rename_title">Rename project</string>
