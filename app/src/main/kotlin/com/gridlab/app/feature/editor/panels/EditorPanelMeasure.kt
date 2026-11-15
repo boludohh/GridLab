@@ -2,7 +2,7 @@ package com.gridlab.app.feature.editor.panels
 
 import com.gridlab.app.feature.editor.EditorUiState
 import com.gridlab.app.feature.editor.EditorViewModel
-
+import com.gridlab.app.feature.editor.measureDistanceDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
