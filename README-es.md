@@ -16,6 +16,7 @@ Una herramienta Android de código abierto para artistas, estudiantes y cualquie
 
 ---
 
+
 ## ¿Qué es GridLab?
 
 GridLab te ayuda a transferir una imagen de referencia a papel físico mediante la **técnica de dibujo por cuadrícula**. Reúne la configuración del papel, la cuadrícula de dibujo y la imagen de referencia en un solo espacio de trabajo, de modo que puedas configurarlos de forma independiente y ver cómo encajan antes de dibujar.
@@ -23,6 +24,17 @@ GridLab te ayuda a transferir una imagen de referencia a papel físico mediante 
 Crea un proyecto, elige el papel que vas a usar, configura las divisiones de la cuadrícula, posiciona tu imagen de referencia y exporta el resultado como guía para tu proceso de dibujo.
 
 GridLab está diseñado para mantener el proceso flexible: no estás limitado a un tamaño de papel fijo, una cuadrícula cuadrada o una única forma de organizar tu referencia.
+
+
+## Capturas de pantalla
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab1.png" alt="Inicio y proyectos de GridLab" width="100%" /></td>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab2.png" alt="Espacio de trabajo del editor de GridLab" width="100%" /></td>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab3.png" alt="Configuración de papel y cuadrícula en GridLab" width="100%" /></td>
+  </tr>
+</table>
 
 ## Características
 

@@ -16,6 +16,7 @@ An open-source Android tool for artists, students, and anyone who wants to repro
 
 ---
 
+
 ## What is GridLab?
 
 GridLab helps you transfer a reference image onto physical paper with the **grid drawing technique**. It brings the paper layout, drawing grid, and reference image together in one workspace, so you can configure them independently and see how they fit before drawing.
@@ -23,6 +24,17 @@ GridLab helps you transfer a reference image onto physical paper with the **grid
 Create a project, choose the paper you plan to use, set the grid divisions, position your reference image, and export the result as a guide for your drawing process.
 
 GridLab is designed to keep the process flexible: you are not restricted to a fixed paper size, a square grid, or a single way of arranging your reference.
+
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab1.png" alt="GridLab home and projects" width="100%" /></td>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab2.png" alt="GridLab editor workspace" width="100%" /></td>
+    <td align="center" width="33%"><img src="docs/screenshots/ScreenShot-GridLab3.png" alt="GridLab grid and paper setup" width="100%" /></td>
+  </tr>
+</table>
 
 ## Features
 
