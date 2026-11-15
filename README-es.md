@@ -1,5 +1,7 @@
 <div align="center">
 
+[🇬🇧 English](README.md) | [🇪🇸 Español](README-es.md)
+
 <img src="docs/assets/gridlab_icon.png" alt="GridLab app icon" width="128" />
 
 # GridLab
