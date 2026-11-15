@@ -560,7 +560,9 @@ class GridConfigViewModel @Inject constructor(
         val maxMemory = Runtime.getRuntime().maxMemory()
         val safeDpi = ExportSizeCalculator.maxSafeDpi(paper.widthMm, paper.heightMm, maxMemory)
         val dpi = state.selectedExportDpi
-        if (!ExportSizeCalculator.isDpiSafe(paper.widthMm, paper.heightMm, dpi, maxMemory)) {
+        if (!ExportSizeCalculator.isValidExportRequest(paper.widthMm, paper.heightMm, dpi) ||
+            !ExportSizeCalculator.isDpiSafe(paper.widthMm, paper.heightMm, dpi, maxMemory)
+        ) {
             _uiState.update {
                 it.copy(
                     maxSafeExportDpi = safeDpi,

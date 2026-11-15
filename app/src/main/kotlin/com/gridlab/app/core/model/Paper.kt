@@ -22,6 +22,27 @@ data class Paper(
     val displayUnit: LengthUnit = LengthUnit.Millimeter,
     val colorArgb: Long = DEFAULT_COLOR_ARGB,
 ) {
+    init {
+        require(widthMm.isFinite() && heightMm.isFinite()) {
+            "Paper width/height must be finite"
+        }
+        require(widthMm > 0.0 && heightMm > 0.0) {
+            "Paper width/height must be positive"
+        }
+        require(
+            marginLeftMm.isFinite() && marginTopMm.isFinite() &&
+                marginRightMm.isFinite() && marginBottomMm.isFinite(),
+        ) {
+            "Paper margins must be finite"
+        }
+        require(
+            marginLeftMm >= 0.0 && marginTopMm >= 0.0 &&
+                marginRightMm >= 0.0 && marginBottomMm >= 0.0,
+        ) {
+            "Paper margins must be non-negative"
+        }
+    }
+
     val printableWidthMm: Double
         get() = (widthMm - marginLeftMm - marginRightMm).coerceAtLeast(0.0)
 

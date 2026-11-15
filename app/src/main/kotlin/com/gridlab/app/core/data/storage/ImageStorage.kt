@@ -1,6 +1,7 @@
 package com.gridlab.app.core.data.storage
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import com.gridlab.app.core.model.ImageAvailability
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,7 +47,9 @@ class ImageStorage @Inject constructor(
 
     /**
      * Probes on-disk availability for a relative path stored in the document model.
-     * Empty or unreadable files are treated as [ImageAvailability.Corrupt].
+     *
+     * Uses a bounds-only [BitmapFactory] decode so a non-image or truncated file is
+     * reported as [ImageAvailability.Corrupt], not [ImageAvailability.Present].
      */
     fun probe(relativePath: String?): ImageAvailability {
         if (relativePath.isNullOrBlank()) return ImageAvailability.None
@@ -54,10 +57,16 @@ class ImageStorage @Inject constructor(
         if (!file.isFile) return ImageAvailability.Missing
         if (file.length() <= 0L) return ImageAvailability.Corrupt
         return runCatching {
-            file.inputStream().use { stream ->
-                val header = ByteArray(16)
-                val read = stream.read(header)
-                if (read <= 0) ImageAvailability.Corrupt else ImageAvailability.Present
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+            val w = options.outWidth
+            val h = options.outHeight
+            if (w <= 0 || h <= 0) {
+                ImageAvailability.Corrupt
+            } else {
+                ImageAvailability.Present
             }
         }.getOrDefault(ImageAvailability.Corrupt)
     }
