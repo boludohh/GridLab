@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +25,8 @@ import com.gridlab.app.core.model.LengthUnit
 import com.gridlab.app.core.model.Paper
 import com.gridlab.app.core.model.PaperOrientation
 import com.gridlab.app.core.model.StandardPaperFormat
-import com.gridlab.app.core.ui.ColorPickerField
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.feature.editor.components.ColorPickerField
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 
 /**
  * Bottom panel with paper settings. The toolbar already shows "Paper", so this
@@ -32,7 +35,7 @@ import com.gridlab.app.ui.theme.GridLabTheme
 @Composable
 internal fun EditorPaperPanel(
     paper: Paper,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
     modifier: Modifier = Modifier,
 ) {
     Column(

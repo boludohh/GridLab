@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,7 +20,7 @@ import com.gridlab.app.R
 import com.gridlab.app.core.model.ImageAvailability
 import com.gridlab.app.core.model.ImageFilter
 import com.gridlab.app.core.model.ReferenceImage
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 import java.util.Locale
 
 /**
@@ -32,7 +35,7 @@ internal fun EditorImagePanel(
     image: ReferenceImage?,
     onImportClick: () -> Unit,
     onRemoveClick: () -> Unit,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -183,7 +186,7 @@ private fun ImageSourceSection(
 @Composable
 private fun ImageVisibilitySection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
@@ -202,7 +205,7 @@ private fun ImageVisibilitySection(
 @Composable
 private fun ImageLockSection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     val colors = GridLabTheme.colors
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,7 +230,7 @@ private fun ImageLockSection(
 @Composable
 private fun ImageOpacitySection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     Slider(
         value = image.opacity,
@@ -244,7 +247,7 @@ private fun ImageOpacitySection(
 @Composable
 private fun ImageRotationSection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     Slider(
         value = image.rotationDegrees,
@@ -264,7 +267,7 @@ private fun ImageRotationSection(
 @Composable
 private fun ImagePositionSection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     val colors = GridLabTheme.colors
     Text(
@@ -284,7 +287,7 @@ private fun ImagePositionSection(
 @Composable
 private fun ImageCropSection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     val colors = GridLabTheme.colors
     Text(
@@ -364,7 +367,7 @@ private fun CropEdgeSlider(
 @Composable
 private fun ImageFilterSection(
     image: ReferenceImage,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),

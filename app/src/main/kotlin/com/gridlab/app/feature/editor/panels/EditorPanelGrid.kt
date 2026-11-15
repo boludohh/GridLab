@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +19,7 @@ import com.gridlab.app.core.model.Grid
 @Composable
 internal fun EditorGridPanel(
     grid: Grid,
-    viewModel: GridConfigViewModel,
+    viewModel: EditorViewModel,
     modifier: Modifier = Modifier,
 ) {
     Column(

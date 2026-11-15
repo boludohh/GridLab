@@ -1,4 +1,4 @@
-package com.gridlab.app.ui
+package com.gridlab.app.core.designsystem
 
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat

@@ -56,7 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.gridlab.app.R
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 import java.io.File
 import kotlinx.coroutines.delay
 

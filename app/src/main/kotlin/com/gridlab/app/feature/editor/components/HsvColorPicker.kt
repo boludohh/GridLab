@@ -1,4 +1,4 @@
-package com.gridlab.app.core.ui
+package com.gridlab.app.feature.editor.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
@@ -43,7 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 import android.graphics.Color as AndroidColor
 
 /**

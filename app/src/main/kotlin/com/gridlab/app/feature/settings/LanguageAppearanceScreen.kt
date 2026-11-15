@@ -42,10 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.preferences.AppLanguage
-import com.gridlab.app.ui.theme.GridLabTheme
-import com.gridlab.app.ui.theme.GridLabThemeMode
-import com.gridlab.app.ui.theme.iconRes
-import com.gridlab.app.ui.theme.next
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabThemeMode
+import com.gridlab.app.core.designsystem.theme.iconRes
+import com.gridlab.app.core.designsystem.theme.next
 import kotlinx.coroutines.launch
 
 private val ThemeIconEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)

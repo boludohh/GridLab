@@ -23,19 +23,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gridlab.app.core.preferences.AppLanguage
 import com.gridlab.app.core.preferences.ThemePreferencesRepository
-import com.gridlab.app.ui.AppLocale
-import com.gridlab.app.feature.editor.grid.GridConfigScreen
+import com.gridlab.app.core.designsystem.AppLocale
+import com.gridlab.app.feature.editor.EditorScreen
 import com.gridlab.app.feature.main.MainScreen
 import com.gridlab.app.feature.settings.AboutScreen
 import com.gridlab.app.feature.settings.LanguageAppearanceScreen
 import com.gridlab.app.feature.settings.OpenSourceLicensesScreen
 import com.gridlab.app.feature.settings.SettingsScreen
-import com.gridlab.app.ui.configureEdgeToEdge
-import com.gridlab.app.ui.theme.GridLabTheme
-import com.gridlab.app.ui.theme.GridLabThemeMode
-import com.gridlab.app.ui.theme.ThemeRevealOverlay
-import com.gridlab.app.ui.theme.ThemeRevealState
-import com.gridlab.app.ui.theme.captureActivityBitmap
+import com.gridlab.app.core.designsystem.configureEdgeToEdge
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabThemeMode
+import com.gridlab.app.core.designsystem.theme.ThemeRevealOverlay
+import com.gridlab.app.core.designsystem.theme.ThemeRevealState
+import com.gridlab.app.core.designsystem.theme.captureActivityBitmap
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                             is RootDestination.Editor -> {
-                                GridConfigScreen(
+                                EditorScreen(
                                     documentId = dest.documentId,
                                     onBack = { destination = RootDestination.Home },
                                     modifier = pad,

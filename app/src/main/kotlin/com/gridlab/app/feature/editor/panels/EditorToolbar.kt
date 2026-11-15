@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background

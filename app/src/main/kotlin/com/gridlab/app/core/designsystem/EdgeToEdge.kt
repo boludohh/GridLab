@@ -1,4 +1,4 @@
-package com.gridlab.app.ui
+package com.gridlab.app.core.designsystem
 
 import android.graphics.Color
 import android.os.Build

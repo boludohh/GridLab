@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -14,11 +17,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.Grid
-import com.gridlab.app.core.ui.ColorPickerField
+import com.gridlab.app.feature.editor.components.ColorPickerField
 import java.util.Locale
 
 @Composable
-internal fun GridSizeSection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridSizeSection(grid: Grid, viewModel: EditorViewModel) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -39,7 +42,7 @@ internal fun GridSizeSection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridVisibilitySection(grid: Grid, viewModel: EditorViewModel) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.visible,
@@ -55,7 +58,7 @@ internal fun GridVisibilitySection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridSecondarySection(grid: Grid, viewModel: EditorViewModel) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.secondaryVisible,
@@ -85,7 +88,7 @@ internal fun GridSecondarySection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridLabelsSection(grid: Grid, viewModel: EditorViewModel) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = grid.labelsVisible,
@@ -109,7 +112,7 @@ internal fun GridLabelsSection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridStrokeSection(grid: Grid, viewModel: EditorViewModel) {
     Slider(
         value = grid.lineStyle.strokeWidthMm.toFloat(),
         onValueChange = { viewModel.setStrokeWidthMm(it.toDouble()) },
@@ -125,7 +128,7 @@ internal fun GridStrokeSection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridOpacitySection(grid: Grid, viewModel: EditorViewModel) {
     Slider(
         value = grid.lineStyle.opacity,
         onValueChange = viewModel::setOpacity,
@@ -138,7 +141,7 @@ internal fun GridOpacitySection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridColorSection(grid: Grid, viewModel: EditorViewModel) {
     ColorPickerField(
         label = stringResource(R.string.grid_color_label),
         colorArgb = grid.lineStyle.colorArgb,
@@ -148,7 +151,7 @@ internal fun GridColorSection(grid: Grid, viewModel: GridConfigViewModel) {
 }
 
 @Composable
-internal fun GridSecondaryColorSection(grid: Grid, viewModel: GridConfigViewModel) {
+internal fun GridSecondaryColorSection(grid: Grid, viewModel: EditorViewModel) {
     ColorPickerField(
         label = stringResource(R.string.grid_secondary_color_label),
         colorArgb = grid.secondaryLineStyle.colorArgb,
@@ -163,7 +166,7 @@ internal fun GridSecondaryColorSection(grid: Grid, viewModel: GridConfigViewMode
  */
 @Composable
 internal fun GridSaveSection(
-    uiState: GridConfigUiState,
+    uiState: EditorUiState,
     onSave: () -> Unit,
     modifier: Modifier = Modifier.fillMaxWidth(),
 ) {

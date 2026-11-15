@@ -1,4 +1,4 @@
-package com.gridlab.app.ui.theme
+package com.gridlab.app.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

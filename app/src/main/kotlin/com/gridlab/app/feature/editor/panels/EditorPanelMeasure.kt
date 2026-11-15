@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.LengthUnit
-import com.gridlab.app.core.ui.ColorPickerField
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.feature.editor.components.ColorPickerField
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 
 /**
  * Bottom panel for the measure tool. Toolbar already shows "Measure"; this panel
@@ -28,8 +31,8 @@ import com.gridlab.app.ui.theme.GridLabTheme
  */
 @Composable
 internal fun EditorMeasurePanel(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -87,8 +90,8 @@ internal fun EditorMeasurePanel(
 
 @Composable
 private fun MeasureDistanceSection(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
 ) {
     val colors = GridLabTheme.colors
     val distance = uiState.measureDistanceDisplay()

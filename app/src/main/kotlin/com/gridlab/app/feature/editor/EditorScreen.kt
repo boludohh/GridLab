@@ -1,4 +1,12 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor
+
+import com.gridlab.app.feature.editor.panels.EditorExportPanel
+import com.gridlab.app.feature.editor.panels.EditorGridPanel
+import com.gridlab.app.feature.editor.panels.EditorImagePanel
+import com.gridlab.app.feature.editor.panels.EditorMeasurePanel
+import com.gridlab.app.feature.editor.panels.EditorPaperPanel
+import com.gridlab.app.feature.editor.panels.EditorTool
+import com.gridlab.app.feature.editor.panels.EditorToolbar
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -110,7 +118,7 @@ private data class PreviewInteraction(
 )
 
 /**
- * Clips to the same normalized source crop used by [com.gridlab.app.core.render.DocumentRenderer].
+ * Clips to the same normalized source crop used by [com.gridlab.app.feature.editor.export.DocumentRenderer].
  *
  * [size] is the content box (Fit container). The outline is the destination rectangle of the
  * cropped region after fit-in-content (scale/offset are applied via graphicsLayer on top).
@@ -160,11 +168,11 @@ private class SourceCropFitShape(
 }
 
 @Composable
-fun GridConfigScreen(
+fun EditorScreen(
     documentId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GridConfigViewModel = hiltViewModel(),
+    viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pickImage = rememberLauncherForActivityResult(
@@ -197,7 +205,7 @@ fun GridConfigScreen(
         return
     }
 
-    GridConfigContent(
+    EditorContent(
         uiState = uiState,
         viewModel = viewModel,
         onBack = onBack,
@@ -211,9 +219,9 @@ fun GridConfigScreen(
 }
 
 @Composable
-private fun GridConfigContent(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+private fun EditorContent(
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
     onBack: () -> Unit,
     onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -275,7 +283,7 @@ private fun GridConfigContent(
 @Composable
 private fun EditorTopBar(
     documentName: String,
-    uiState: GridConfigUiState,
+    uiState: EditorUiState,
     onBack: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -321,8 +329,8 @@ private fun EditorTopBar(
 @Composable
 private fun EditorPanelHost(
     tool: EditorTool,
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
     onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

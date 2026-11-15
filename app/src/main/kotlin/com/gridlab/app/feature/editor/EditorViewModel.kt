@@ -1,14 +1,14 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gridlab.app.core.data.repository.ProjectRepository
-import com.gridlab.app.core.data.storage.ExportStorage
+import com.gridlab.app.feature.editor.export.ExportStorage
 import com.gridlab.app.core.data.storage.ImageStorage
 import com.gridlab.app.core.geometry.ExportSizeCalculator
-import com.gridlab.app.core.render.DocumentRenderer
+import com.gridlab.app.feature.editor.export.DocumentRenderer
 import com.gridlab.app.core.geometry.ImageTransformCalculator
 import com.gridlab.app.core.geometry.UnitConverter
 import com.gridlab.app.core.geometry.ViewportTransform
@@ -37,7 +37,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
-data class GridConfigUiState(
+data class EditorUiState(
     val documentId: String = "",
     val documentName: String = "Untitled",
     val paper: Paper = Paper.defaultA4(),
@@ -62,7 +62,7 @@ data class GridConfigUiState(
     val lastExportLocation: String? = null,
 )
 
-fun GridConfigUiState.measureDistanceDisplay(): Double? {
+fun EditorUiState.measureDistanceDisplay(): Double? {
     val p1 = measurePoint1Mm ?: return null
     val p2 = measurePoint2Mm ?: return null
     val mm = ViewportTransform.distanceMm(p1, p2)
@@ -71,7 +71,7 @@ fun GridConfigUiState.measureDistanceDisplay(): Double? {
 
 @HiltViewModel
 @Suppress("TooManyFunctions")
-class GridConfigViewModel @Inject constructor(
+class EditorViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
     private val imageStorage: ImageStorage,
     private val exportStorage: ExportStorage,
@@ -79,8 +79,8 @@ class GridConfigViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(GridConfigUiState())
-    val uiState: StateFlow<GridConfigUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(EditorUiState())
+    val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
     private var autosaveJob: Job? = null
     private val saveMutex = Mutex()

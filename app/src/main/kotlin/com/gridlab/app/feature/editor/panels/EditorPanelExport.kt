@@ -1,4 +1,7 @@
-package com.gridlab.app.feature.editor.grid
+package com.gridlab.app.feature.editor.panels
+
+import com.gridlab.app.feature.editor.EditorUiState
+import com.gridlab.app.feature.editor.EditorViewModel
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -25,12 +28,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gridlab.app.R
 import com.gridlab.app.core.model.ExportFormat
-import com.gridlab.app.ui.theme.GridLabTheme
+import com.gridlab.app.core.designsystem.theme.GridLabTheme
 
 @Composable
 internal fun EditorExportPanel(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -104,8 +107,8 @@ internal fun EditorExportPanel(
 
 @Composable
 private fun ExportResolutionSection(
-    uiState: GridConfigUiState,
-    viewModel: GridConfigViewModel,
+    uiState: EditorUiState,
+    viewModel: EditorViewModel,
 ) {
     val colors = GridLabTheme.colors
     Text(
@@ -167,7 +170,7 @@ private fun ExportResolutionSection(
 
 @Composable
 private fun ExportFormatSection(
-    uiState: GridConfigUiState,
+    uiState: EditorUiState,
     onExportClick: (ExportFormat) -> Unit,
 ) {
     val colors = GridLabTheme.colors

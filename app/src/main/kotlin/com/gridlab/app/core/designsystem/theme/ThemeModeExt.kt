@@ -1,4 +1,4 @@
-package com.gridlab.app.ui.theme
+package com.gridlab.app.core.designsystem.theme
 
 import androidx.annotation.DrawableRes
 import com.gridlab.app.R
