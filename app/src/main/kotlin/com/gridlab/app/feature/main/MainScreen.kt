@@ -101,9 +101,9 @@ fun MainScreen(
                 }
             },
         )
-        if (uiState.errorMessageRes != null) {
+        uiState.errorMessageRes?.let { errorRes ->
             Text(
-                text = stringResource(uiState.errorMessageRes),
+                text = stringResource(errorRes),
                 color = colors.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),
