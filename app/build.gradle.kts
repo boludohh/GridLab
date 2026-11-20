@@ -23,7 +23,11 @@ val hasReleaseSigning = keystorePropertiesFile.exists()
 
 android {
     namespace = "com.gridlab.app"
-    compileSdk = 37
+    compileSdk {
+         version = release(37) {
+             minorApiLevel = 2
+         }
+    }
 
     defaultConfig {
         applicationId = "com.gridlab.app"
