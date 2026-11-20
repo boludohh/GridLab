@@ -1,23 +1,26 @@
 package com.gridlab.app.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 /**
  * Theme mode supported by GridLab.
- * - Light: Claro
- * - Dark: Oscuro
- * - Night: Full Negro (true black)
+ * - Light: system light / expressive light
+ * - Dark: standard dark
+ * - Night: near-black (AMOLED-friendly)
  */
 enum class GridLabThemeMode {
     Light,
@@ -25,6 +28,14 @@ enum class GridLabThemeMode {
     Night,
 }
 
+/**
+ * Compatibility semantic layer.
+ *
+ * All tokens are derived from the active Material 3 [ColorScheme] so that existing
+ * screens keep compiling while the app uses Material Expressive theming.
+ * A later visual refactor can replace `GridLabTheme.colors.xxx` with direct
+ * `MaterialTheme.colorScheme` / component defaults.
+ */
 @Immutable
 data class GridLabSemanticColors(
     val bg: Color,
@@ -93,341 +104,197 @@ data class GridLabSemanticColors(
     val successBorder: Color,
     val successSolid: Color,
     val successOnSolid: Color,
+    // Direct Material pass-throughs used by a few screens
+    val onSurfaceVariant: Color,
+    val onSecondaryContainer: Color,
+    val surfaceVariant: Color,
+    val secondaryContainer: Color,
 )
 
-private val LightSemanticColors = GridLabSemanticColors(
-    bg = LightBg,
-    surface = LightSurface,
-    e1 = LightE1,
-    e2 = LightE2,
-    e3 = LightE3,
-    e4 = LightE4,
-    borderDecoBg = LightBorderDecoBg,
-    borderDecoSurface = LightBorderDecoSurface,
-    borderDecoE1 = LightBorderDecoE1,
-    borderDecoE2 = LightBorderDecoE2,
-    borderDecoE3 = LightBorderDecoE3,
-    borderDecoE4 = LightBorderDecoE4,
-    borderDisabledSurface = LightBorderDisabledSurface,
-    borderDisabledE1 = LightBorderDisabledE1,
-    borderDisabledE2 = LightBorderDisabledE2,
-    borderDisabledE3 = LightBorderDisabledE3,
-    borderDisabledE4 = LightBorderDisabledE4,
-    borderActive = LightBorderActive,
-    iconDeco = LightIconDeco,
-    iconInactive = LightIconInactive,
-    iconActive = LightIconActive,
-    textPrimary = LightTextPrimary,
-    textSecondary = LightTextSecondary,
-    textTertiary = LightTextTertiary,
-    textPlaceholder = LightTextPlaceholder,
-    textDisabled = LightTextDisabled,
-    textLink = LightTextLink,
-    textInverse = LightTextInverse,
-    actionBg = LightActionBg,
-    actionOn = LightActionOn,
-    actionPressed = LightActionPressed,
-    actionDisabledBg = LightActionDisabledBg,
-    actionDisabledOn = LightActionDisabledOn,
-    actionSecondaryBg = LightActionSecondaryBg,
-    actionSecondaryOn = LightActionSecondaryOn,
-    stateHover = LightStateHover,
-    statePressed = LightStatePressed,
-    stateFocus = LightStateFocus,
-    selectedFill = LightSelectedFill,
-    focusRing = LightFocusRing,
-    scrim = LightScrim,
-    shadow = LightShadow,
-    skeletonBase = LightSkeletonBase,
-    skeletonHighlight = LightSkeletonHighlight,
-    controlTrack = LightControlTrack,
-    controlFill = LightControlFill,
-    controlThumbOn = LightControlThumbOn,
-    controlThumbOff = LightControlThumbOff,
-    error = LightError,
-    errorContainer = LightErrorContainer,
-    errorOnContainer = LightErrorOnContainer,
-    errorBorder = LightErrorBorder,
-    errorSolid = LightErrorSolid,
-    errorOnSolid = LightErrorOnSolid,
-    warning = LightWarning,
-    warningContainer = LightWarningContainer,
-    warningOnContainer = LightWarningOnContainer,
-    warningBorder = LightWarningBorder,
-    warningSolid = LightWarningSolid,
-    warningOnSolid = LightWarningOnSolid,
-    success = LightSuccess,
-    successContainer = LightSuccessContainer,
-    successOnContainer = LightSuccessOnContainer,
-    successBorder = LightSuccessBorder,
-    successSolid = LightSuccessSolid,
-    successOnSolid = LightSuccessOnSolid,
+private fun ColorScheme.toGridLabSemanticColors(): GridLabSemanticColors {
+    val onSurfaceDisabled = onSurface.copy(alpha = 0.38f)
+    val onSurfaceHover = onSurface.copy(alpha = 0.06f)
+    val onSurfacePressed = onSurface.copy(alpha = 0.10f)
+    val onSurfaceSelected = onSurface.copy(alpha = 0.08f)
+    val onSurfaceTrack = onSurface.copy(alpha = 0.24f)
+    val primaryPressed = primary.copy(alpha = 0.85f)
+
+    return GridLabSemanticColors(
+        bg = background,
+        surface = surface,
+        e1 = surfaceContainerLow,
+        e2 = surfaceContainer,
+        e3 = surfaceContainerHigh,
+        e4 = surfaceContainerHighest,
+        borderDecoBg = outlineVariant,
+        borderDecoSurface = outline,
+        borderDecoE1 = outlineVariant,
+        borderDecoE2 = outlineVariant,
+        borderDecoE3 = outline,
+        borderDecoE4 = outline,
+        borderDisabledSurface = outlineVariant.copy(alpha = 0.5f),
+        borderDisabledE1 = outlineVariant.copy(alpha = 0.5f),
+        borderDisabledE2 = outlineVariant.copy(alpha = 0.5f),
+        borderDisabledE3 = outlineVariant.copy(alpha = 0.5f),
+        borderDisabledE4 = outlineVariant.copy(alpha = 0.5f),
+        borderActive = primary,
+        iconDeco = onSurfaceVariant,
+        iconInactive = onSurfaceVariant,
+        iconActive = onSurface,
+        textPrimary = onSurface,
+        textSecondary = onSurfaceVariant,
+        textTertiary = onSurfaceVariant.copy(alpha = 0.8f),
+        textPlaceholder = onSurfaceVariant.copy(alpha = 0.6f),
+        textDisabled = onSurfaceDisabled,
+        textLink = primary,
+        textInverse = onPrimary,
+        actionBg = primary,
+        actionOn = onPrimary,
+        actionPressed = primaryPressed,
+        actionDisabledBg = onSurface.copy(alpha = 0.12f),
+        actionDisabledOn = onSurfaceDisabled,
+        actionSecondaryBg = secondaryContainer,
+        actionSecondaryOn = onSecondaryContainer,
+        stateHover = onSurfaceHover,
+        statePressed = onSurfacePressed,
+        stateFocus = onSurfacePressed,
+        selectedFill = onSurfaceSelected,
+        focusRing = primary,
+        scrim = scrim,
+        shadow = Color.Black.copy(alpha = 0.16f),
+        skeletonBase = onSurfaceHover,
+        skeletonHighlight = onSurfacePressed,
+        controlTrack = onSurfaceTrack,
+        controlFill = primary,
+        controlThumbOn = primary,
+        controlThumbOff = onSurfaceVariant,
+        error = error,
+        errorContainer = errorContainer,
+        errorOnContainer = onErrorContainer,
+        errorBorder = error,
+        errorSolid = error,
+        errorOnSolid = onError,
+        // Warning / success: map to tertiary / primary containers as neutral stand-ins
+        // until a dedicated visual pass defines brand colors.
+        warning = tertiary,
+        warningContainer = tertiaryContainer,
+        warningOnContainer = onTertiaryContainer,
+        warningBorder = tertiary,
+        warningSolid = tertiary,
+        warningOnSolid = onTertiary,
+        success = tertiary,
+        successContainer = tertiaryContainer,
+        successOnContainer = onTertiaryContainer,
+        successBorder = tertiary,
+        successSolid = tertiary,
+        successOnSolid = onTertiary,
+        onSurfaceVariant = onSurfaceVariant,
+        onSecondaryContainer = onSecondaryContainer,
+        surfaceVariant = surfaceVariant,
+        secondaryContainer = secondaryContainer,
+    )
+}
+
+/**
+ * Neutral dark scheme (standard dark, not pure black).
+ * Built so surface containers remain distinct for elevation.
+ */
+private val DarkNeutralColorScheme = darkColorScheme(
+    primary = Color(0xFFE4E2E6),
+    onPrimary = Color(0xFF1C1B1F),
+    primaryContainer = Color(0xFF47464A),
+    onPrimaryContainer = Color(0xFFE4E2E6),
+    secondary = Color(0xFFCAC5CA),
+    onSecondary = Color(0xFF323035),
+    secondaryContainer = Color(0xFF49464B),
+    onSecondaryContainer = Color(0xFFE6E1E6),
+    tertiary = Color(0xFFCFC2BE),
+    onTertiary = Color(0xFF37312F),
+    tertiaryContainer = Color(0xFF4E4745),
+    onTertiaryContainer = Color(0xFFECDFDB),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF141316),
+    onBackground = Color(0xFFE5E1E6),
+    surface = Color(0xFF141316),
+    onSurface = Color(0xFFE5E1E6),
+    surfaceVariant = Color(0xFF49454E),
+    onSurfaceVariant = Color(0xFFCAC4CF),
+    outline = Color(0xFF948F99),
+    outlineVariant = Color(0xFF49454E),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFFE5E1E6),
+    inverseOnSurface = Color(0xFF313033),
+    inversePrimary = Color(0xFF5F5E62),
+    surfaceDim = Color(0xFF141316),
+    surfaceBright = Color(0xFF3A383C),
+    surfaceContainerLowest = Color(0xFF0F0E11),
+    surfaceContainerLow = Color(0xFF1C1B1F),
+    surfaceContainer = Color(0xFF201F23),
+    surfaceContainerHigh = Color(0xFF2B292D),
+    surfaceContainerHighest = Color(0xFF363438),
 )
 
-private val DarkSemanticColors = GridLabSemanticColors(
-    bg = DarkBg,
-    surface = DarkSurface,
-    e1 = DarkE1,
-    e2 = DarkE2,
-    e3 = DarkE3,
-    e4 = DarkE4,
-    borderDecoBg = DarkBorderDecoBg,
-    borderDecoSurface = DarkBorderDecoSurface,
-    borderDecoE1 = DarkBorderDecoE1,
-    borderDecoE2 = DarkBorderDecoE2,
-    borderDecoE3 = DarkBorderDecoE3,
-    borderDecoE4 = DarkBorderDecoE4,
-    borderDisabledSurface = DarkBorderDisabledSurface,
-    borderDisabledE1 = DarkBorderDisabledE1,
-    borderDisabledE2 = DarkBorderDisabledE2,
-    borderDisabledE3 = DarkBorderDisabledE3,
-    borderDisabledE4 = DarkBorderDisabledE4,
-    borderActive = DarkBorderActive,
-    iconDeco = DarkIconDecoSurface, // representative for surface-level deco
-    iconInactive = DarkIconInactiveSurface,
-    iconActive = DarkIconActive,
-    textPrimary = DarkTextPrimary,
-    textSecondary = DarkTextSecondary,
-    textTertiary = DarkTextTertiary,
-    textPlaceholder = DarkTextPlaceholder,
-    textDisabled = DarkTextDisabled,
-    textLink = DarkTextLink,
-    textInverse = DarkTextInverse,
-    actionBg = DarkActionBg,
-    actionOn = DarkActionOn,
-    actionPressed = DarkActionPressed,
-    actionDisabledBg = DarkActionDisabledBg,
-    actionDisabledOn = DarkActionDisabledOn,
-    actionSecondaryBg = DarkActionSecondaryBg,
-    actionSecondaryOn = DarkActionSecondaryOn,
-    stateHover = DarkStateHover,
-    statePressed = DarkStatePressed,
-    stateFocus = DarkStateFocus,
-    selectedFill = DarkSelectedFill,
-    focusRing = DarkFocusRing,
-    scrim = DarkScrim,
-    shadow = DarkShadow,
-    skeletonBase = DarkSkeletonBase,
-    skeletonHighlight = DarkSkeletonHighlight,
-    controlTrack = DarkControlTrack,
-    controlFill = DarkControlFill,
-    controlThumbOn = DarkControlThumbOn,
-    controlThumbOff = DarkControlThumbOff,
-    error = DarkError,
-    errorContainer = DarkErrorContainer,
-    errorOnContainer = DarkErrorOnContainer,
-    errorBorder = DarkErrorBorder,
-    errorSolid = DarkErrorSolid,
-    errorOnSolid = DarkErrorOnSolid,
-    warning = DarkWarning,
-    warningContainer = DarkWarningContainer,
-    warningOnContainer = DarkWarningOnContainer,
-    warningBorder = DarkWarningBorder,
-    warningSolid = DarkWarningSolid,
-    warningOnSolid = DarkWarningOnSolid,
-    success = DarkSuccess,
-    successContainer = DarkSuccessContainer,
-    successOnContainer = DarkSuccessOnContainer,
-    successBorder = DarkSuccessBorder,
-    successSolid = DarkSuccessSolid,
-    successOnSolid = DarkSuccessOnSolid,
+/**
+ * Night = near-black surfaces for OLED, still readable contrast.
+ */
+private val NightColorScheme = darkColorScheme(
+    primary = Color(0xFFE4E2E6),
+    onPrimary = Color(0xFF000000),
+    primaryContainer = Color(0xFF3A393D),
+    onPrimaryContainer = Color(0xFFE4E2E6),
+    secondary = Color(0xFFCAC5CA),
+    onSecondary = Color(0xFF1A1A1A),
+    secondaryContainer = Color(0xFF2C2C2C),
+    onSecondaryContainer = Color(0xFFE6E1E6),
+    tertiary = Color(0xFFCFC2BE),
+    onTertiary = Color(0xFF1A1A1A),
+    tertiaryContainer = Color(0xFF2C2C2C),
+    onTertiaryContainer = Color(0xFFECDFDB),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFE5E1E6),
+    surface = Color(0xFF000000),
+    onSurface = Color(0xFFE5E1E6),
+    surfaceVariant = Color(0xFF2C2C2C),
+    onSurfaceVariant = Color(0xFFCAC4CF),
+    outline = Color(0xFF8A8A8A),
+    outlineVariant = Color(0xFF2C2C2C),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFFE5E1E6),
+    inverseOnSurface = Color(0xFF1A1A1A),
+    inversePrimary = Color(0xFF5F5E62),
+    surfaceDim = Color(0xFF000000),
+    surfaceBright = Color(0xFF2C2C2C),
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF0A0A0A),
+    surfaceContainer = Color(0xFF121212),
+    surfaceContainerHigh = Color(0xFF1A1A1A),
+    surfaceContainerHighest = Color(0xFF242424),
 )
 
-private val NightSemanticColors = GridLabSemanticColors(
-    bg = NightBg,
-    surface = NightSurface,
-    e1 = NightE1,
-    e2 = NightE2,
-    e3 = NightE3,
-    e4 = NightE4,
-    borderDecoBg = NightBorderDecoBg,
-    borderDecoSurface = NightBorderDecoSurface,
-    borderDecoE1 = NightBorderDecoE1,
-    borderDecoE2 = NightBorderDecoE2,
-    borderDecoE3 = NightBorderDecoE3,
-    borderDecoE4 = NightBorderDecoE4,
-    borderDisabledSurface = NightBorderDisabledSurface,
-    borderDisabledE1 = NightBorderDisabledE1,
-    borderDisabledE2 = NightBorderDisabledE2,
-    borderDisabledE3 = NightBorderDisabledE3,
-    borderDisabledE4 = NightBorderDisabledE4,
-    borderActive = NightBorderActive,
-    iconDeco = NightIconDecoSurface,
-    iconInactive = NightIconInactiveSurface,
-    iconActive = NightIconActive,
-    textPrimary = NightTextPrimary,
-    textSecondary = NightTextSecondary,
-    textTertiary = NightTextTertiary,
-    textPlaceholder = NightTextPlaceholder,
-    textDisabled = NightTextDisabled,
-    textLink = NightTextLink,
-    textInverse = NightTextInverse,
-    actionBg = NightActionBg,
-    actionOn = NightActionOn,
-    actionPressed = NightActionPressed,
-    actionDisabledBg = NightActionDisabledBg,
-    actionDisabledOn = NightActionDisabledOn,
-    actionSecondaryBg = NightActionSecondaryBg,
-    actionSecondaryOn = NightActionSecondaryOn,
-    stateHover = NightStateHover,
-    statePressed = NightStatePressed,
-    stateFocus = NightStateFocus,
-    selectedFill = NightSelectedFill,
-    focusRing = NightFocusRing,
-    scrim = NightScrim,
-    shadow = NightShadow,
-    skeletonBase = NightSkeletonBase,
-    skeletonHighlight = NightSkeletonHighlight,
-    controlTrack = NightControlTrack,
-    controlFill = NightControlFill,
-    controlThumbOn = NightControlThumbOn,
-    controlThumbOff = NightControlThumbOff,
-    error = NightError,
-    errorContainer = NightErrorContainer,
-    errorOnContainer = NightErrorOnContainer,
-    errorBorder = NightErrorBorder,
-    errorSolid = NightErrorSolid,
-    errorOnSolid = NightErrorOnSolid,
-    warning = NightWarning,
-    warningContainer = NightWarningContainer,
-    warningOnContainer = NightWarningOnContainer,
-    warningBorder = NightWarningBorder,
-    warningSolid = NightWarningSolid,
-    warningOnSolid = NightWarningOnSolid,
-    success = NightSuccess,
-    successContainer = NightSuccessContainer,
-    successOnContainer = NightSuccessOnContainer,
-    successBorder = NightSuccessBorder,
-    successSolid = NightSuccessSolid,
-    successOnSolid = NightSuccessOnSolid,
-)
+val LocalGridLabColors = staticCompositionLocalOf {
+    // Fallback; real value is always provided by GridLabTheme.
+    DarkNeutralColorScheme.toGridLabSemanticColors()
+}
 
-val LocalGridLabColors = staticCompositionLocalOf { LightSemanticColors }
-
-private val LightMaterialColorScheme = lightColorScheme(
-    primary = LightActionBg,
-    onPrimary = LightActionOn,
-    primaryContainer = LightE1,
-    onPrimaryContainer = LightTextPrimary,
-    secondary = LightTextSecondary,
-    onSecondary = LightTextInverse,
-    secondaryContainer = LightE2,
-    onSecondaryContainer = LightTextPrimary,
-    tertiary = LightTextTertiary,
-    onTertiary = LightTextInverse,
-    tertiaryContainer = LightE3,
-    onTertiaryContainer = LightTextPrimary,
-    error = LightError,
-    onError = LightErrorOnSolid,
-    errorContainer = LightErrorContainer,
-    onErrorContainer = LightErrorOnContainer,
-    background = LightBg,
-    onBackground = LightTextPrimary,
-    surface = LightSurface,
-    onSurface = LightTextPrimary,
-    surfaceVariant = LightE1,
-    onSurfaceVariant = LightTextSecondary,
-    outline = LightBorderDecoSurface,
-    outlineVariant = LightBorderDecoE1,
-    scrim = LightScrim,
-    inverseSurface = LightTextPrimary,
-    inverseOnSurface = LightTextInverse,
-    inversePrimary = LightActionOn,
-    surfaceDim = LightE4,
-    surfaceBright = LightBg,
-    surfaceContainerLowest = LightBg,
-    surfaceContainerLow = LightSurface,
-    surfaceContainer = LightE1,
-    surfaceContainerHigh = LightE2,
-    surfaceContainerHighest = LightE3,
-)
-
-private val DarkMaterialColorScheme = darkColorScheme(
-    primary = DarkActionBg,
-    onPrimary = DarkActionOn,
-    primaryContainer = DarkE1,
-    onPrimaryContainer = DarkTextPrimary,
-    secondary = DarkTextSecondary,
-    onSecondary = DarkTextInverse,
-    secondaryContainer = DarkE2,
-    onSecondaryContainer = DarkTextPrimary,
-    tertiary = DarkTextTertiary,
-    onTertiary = DarkTextInverse,
-    tertiaryContainer = DarkE3,
-    onTertiaryContainer = DarkTextPrimary,
-    error = DarkError,
-    onError = DarkErrorOnSolid,
-    errorContainer = DarkErrorContainer,
-    onErrorContainer = DarkErrorOnContainer,
-    background = DarkBg,
-    onBackground = DarkTextPrimary,
-    surface = DarkSurface,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkE1,
-    onSurfaceVariant = DarkTextSecondary,
-    outline = DarkBorderDecoSurface,
-    outlineVariant = DarkBorderDecoE1,
-    scrim = DarkScrim,
-    inverseSurface = DarkTextPrimary,
-    inverseOnSurface = DarkTextInverse,
-    inversePrimary = DarkActionOn,
-    surfaceDim = DarkBg,
-    surfaceBright = DarkE4,
-    surfaceContainerLowest = DarkBg,
-    surfaceContainerLow = DarkSurface,
-    surfaceContainer = DarkE1,
-    surfaceContainerHigh = DarkE2,
-    surfaceContainerHighest = DarkE3,
-)
-
-private val NightMaterialColorScheme = darkColorScheme(
-    primary = NightActionBg,
-    onPrimary = NightActionOn,
-    primaryContainer = NightE1,
-    onPrimaryContainer = NightTextPrimary,
-    secondary = NightTextSecondary,
-    onSecondary = NightTextInverse,
-    secondaryContainer = NightE2,
-    onSecondaryContainer = NightTextPrimary,
-    tertiary = NightTextTertiary,
-    onTertiary = NightTextInverse,
-    tertiaryContainer = NightE3,
-    onTertiaryContainer = NightTextPrimary,
-    error = NightError,
-    onError = NightErrorOnSolid,
-    errorContainer = NightErrorContainer,
-    onErrorContainer = NightErrorOnContainer,
-    background = NightBg,
-    onBackground = NightTextPrimary,
-    surface = NightSurface,
-    onSurface = NightTextPrimary,
-    surfaceVariant = NightE1,
-    onSurfaceVariant = NightTextSecondary,
-    outline = NightBorderDecoSurface,
-    outlineVariant = NightBorderDecoE1,
-    scrim = NightScrim,
-    inverseSurface = NightTextPrimary,
-    inverseOnSurface = NightTextInverse,
-    inversePrimary = NightActionOn,
-    surfaceDim = NightBg,
-    surfaceBright = NightE4,
-    surfaceContainerLowest = NightBg,
-    surfaceContainerLow = NightSurface,
-    surfaceContainer = NightE1,
-    surfaceContainerHigh = NightE2,
-    surfaceContainerHighest = NightE3,
-)
-
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun GridLabTheme(
     themeMode: GridLabThemeMode = if (isSystemInDarkTheme()) GridLabThemeMode.Dark else GridLabThemeMode.Light,
     content: @Composable () -> Unit,
 ) {
-    val (colorScheme, semanticColors) = when (themeMode) {
-        GridLabThemeMode.Light -> LightMaterialColorScheme to LightSemanticColors
-        GridLabThemeMode.Dark -> DarkMaterialColorScheme to DarkSemanticColors
-        GridLabThemeMode.Night -> NightMaterialColorScheme to NightSemanticColors
+    val colorScheme = when (themeMode) {
+        GridLabThemeMode.Light -> expressiveLightColorScheme()
+        GridLabThemeMode.Dark -> DarkNeutralColorScheme
+        GridLabThemeMode.Night -> NightColorScheme
     }
+    val semanticColors = colorScheme.toGridLabSemanticColors()
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -442,15 +309,16 @@ fun GridLabTheme(
     }
 
     CompositionLocalProvider(LocalGridLabColors provides semanticColors) {
-        MaterialTheme(
+        MaterialExpressiveTheme(
             colorScheme = colorScheme,
+            motionScheme = MotionScheme.expressive(),
             typography = Typography,
             content = content,
         )
     }
 }
 
-/** Convenience accessor for semantic colors. */
+/** Convenience accessor for semantic colors (compatibility layer). */
 object GridLabTheme {
     val colors: GridLabSemanticColors
         @Composable
