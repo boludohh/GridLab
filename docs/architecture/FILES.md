@@ -40,7 +40,7 @@ This document describes the responsibility of each project file based on the rep
 
 | File | Purpose |
 |---|---|
-| `.github/workflows/ci.yml` | GitHub Actions workflow that builds debug and release APKs and runs the project's unit tests and Detekt checks. |
+| `.github/workflows/ci.yml` | GitHub Actions workflow that runs the unit tests and Android lint, then builds debug and release APKs and uploads the APKs and verification reports. |
 
 ## 3. Android app module
 
