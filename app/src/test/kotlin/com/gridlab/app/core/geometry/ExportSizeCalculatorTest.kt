@@ -10,15 +10,16 @@ class ExportSizeCalculatorTest {
 
     @Test
     fun widthPx_a4_at_150dpi() {
-        // A4 width 210mm at 150 DPI ≈ 1240 px
+        // 210 mm / 25.4 = 8.2677 in * 150 = 1240.16 px, floored to 1240.
         val px = ExportSizeCalculator.widthPx(210.0, 150)
         assertEquals(1240, px)
     }
 
     @Test
     fun heightPx_a4_at_150dpi() {
+        // 297 mm / 25.4 = 11.6929 in * 150 = 1753.94 px, floored to 1753.
         val px = ExportSizeCalculator.heightPx(297.0, 150)
-        assertEquals(1755, px)
+        assertEquals(1753, px)
     }
 
     @Test
